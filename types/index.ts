@@ -9,24 +9,13 @@ export interface User {
 export interface Founder {
   _id: string;
   userId?: string;
+  githubUsername?: string; // used for deduplication on outbound sourcing
   name: string;
   company: string;
   source: 'inbound' | 'outbound';
   channel?: string;
-  rawSignals?: any[];
-  structuredProfile?: {
-    oneLiner?: string;
-    description?: string;
-    sectors?: string[];
-    stage?: string;
-    location?: string;
-    teamSize?: number;
-    githubUrl?: string;
-    linkedinUrl?: string;
-    websiteUrl?: string;
-    coldStartScoredPath?: boolean;
-    [key: string]: any;
-  };
+  rawSignals?: RawSignal[];
+  structuredProfile?: StructuredProfile;
   founderScore: {
     value: number;
     history: Array<{
@@ -36,6 +25,49 @@ export interface Founder {
     }>;
   };
   createdAt: Date;
+}
+
+export interface RawSignal {
+  type: string;   // e.g. 'github_repo', 'github_profile'
+  source: string; // e.g. 'github'
+  data: Record<string, any>;
+  capturedAt: Date;
+}
+
+export interface StructuredProfile {
+  oneLiner?: string;
+  description?: string;
+  sectors?: string[];
+  stage?: string;
+  location?: string;
+  teamSize?: number;
+  githubUrl?: string;
+  linkedinUrl?: string;
+  websiteUrl?: string;
+  twitterUsername?: string;
+  avatarUrl?: string;
+  followers?: number;
+  publicRepos?: number;
+  githubCreatedAt?: string;
+  topRepos?: Array<{
+    name: string;
+    description: string | null;
+    stars: number;
+    language: string | null;
+    url: string;
+  }>;
+  /** True when the profile is sparse (no bio, no company, <20 followers). Never discarded — flagged for manual review. */
+  coldStart?: boolean;
+  /** Legacy alias kept for backwards compat */
+  coldStartScoredPath?: boolean;
+  [key: string]: any;
+}
+
+/** Thesis object used as input to the sourcing agent */
+export interface Thesis {
+  keywords: string[];
+  minStars?: number;
+  createdAfter?: string; // ISO date, e.g. "2023-01-01"
 }
 
 export interface Application {
@@ -96,7 +128,8 @@ export interface Memo {
 
 export interface PipelineRun {
   _id: string;
-  applicationId: string;
+  applicationId?: string; // undefined for sourcing runs (no single application yet)
+  founderId?: string;     // set for per-founder sub-runs
   stage: 'sourcing' | 'screening' | 'diligence' | 'decision';
   status: 'pending' | 'running' | 'done' | 'error';
   log: Array<{
@@ -104,5 +137,7 @@ export interface PipelineRun {
     message: string;
     level: 'info' | 'warn' | 'error';
   }>;
+  thesis?: any; // stored for auditability
   createdAt: Date;
+  updatedAt?: Date;
 }
