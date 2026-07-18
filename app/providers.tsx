@@ -9,7 +9,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
   return (
     <NextAuthSessionProvider>
       {children}
-      <Toaster position="top-right" richColors />
+      <Toaster position="top-right" theme="dark" richColors />
     </NextAuthSessionProvider>
   );
 }
