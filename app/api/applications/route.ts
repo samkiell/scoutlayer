@@ -2,12 +2,30 @@ import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import clientPromise from '@/lib/db';
+import { getUserProfile, getUserRepos } from '@/lib/sources/github';
+
+function extractGithubUsername(input: string): string | null {
+  if (!input) return null;
+  const cleaned = input.trim();
+  if (cleaned.startsWith('http://') || cleaned.startsWith('https://')) {
+    try {
+      const url = new URL(cleaned);
+      if (url.hostname.includes('github.com')) {
+        const parts = url.pathname.split('/').filter(Boolean);
+        if (parts.length > 0) return parts[0];
+      }
+    } catch {
+      return null;
+    }
+  }
+  return cleaned.replace(/^@/, '');
+}
 
 export async function GET(req: Request) {
   try {
     const session = await getServerSession(authOptions);
     if (!session || !session.user?.email) {
-      return NextResponse.json({ success: false, hasApplied: false, error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
     }
 
     const client = await clientPromise;
@@ -16,16 +34,55 @@ export async function GET(req: Request) {
     const user = await usersCollection.findOne({ email: session.user.email });
 
     if (!user) {
-      return NextResponse.json({ success: false, hasApplied: false, error: 'User not found' }, { status: 404 });
+      return NextResponse.json({ success: false, error: 'User not found' }, { status: 404 });
     }
 
-    // Check if there is an application tied to the founder
-    const applicationsCollection = db.collection('applications');
-    const application = await applicationsCollection.findOne({ founderId: user._id.toString() });
+    const role = user.role;
 
-    return NextResponse.json({ success: true, hasApplied: !!application });
+    if (role === 'investor') {
+      // Return ALL applications joined with founder details
+      const applicationsCollection = db.collection('applications');
+      const applications = await applicationsCollection.find({}).toArray();
+
+      const foundersCollection = db.collection('founders');
+      const joinedApplications = await Promise.all(
+        applications.map(async (app) => {
+          const founder = await foundersCollection.findOne({ _id: new (require('mongodb').ObjectId)(app.founderId) });
+          return {
+            id: app._id.toString(),
+            name: founder?.name || app.companyInfo?.name || 'Unknown Founder',
+            company: app.companyInfo?.name || founder?.company || 'Unknown Company',
+            source: founder?.source || 'inbound',
+            stage: app.status || 'sourced',
+            founderScore: founder?.founderScore?.value ?? null,
+            trustScore: null, // Trust score calculation is downstream in diligence phase
+          };
+        })
+      );
+
+      return NextResponse.json({ success: true, applications: joinedApplications });
+    } else if (role === 'founder') {
+      const foundersCollection = db.collection('founders');
+      const founder = await foundersCollection.findOne({ userId: user._id.toString() });
+
+      if (!founder) {
+        return NextResponse.json({ success: true, hasApplied: false });
+      }
+
+      const applicationsCollection = db.collection('applications');
+      const application = await applicationsCollection.findOne({ founderId: founder._id.toString() });
+
+      return NextResponse.json({
+        success: true,
+        hasApplied: !!application,
+        application,
+        founder,
+      });
+    }
+
+    return NextResponse.json({ success: false, error: 'Invalid role' }, { status: 400 });
   } catch (error: any) {
-    return NextResponse.json({ success: false, hasApplied: false, error: error.message }, { status: 500 });
+    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
   }
 }
 
@@ -45,25 +102,159 @@ export async function POST(req: Request) {
       return NextResponse.json({ success: false, error: 'User not found' }, { status: 404 });
     }
 
-    const body = await req.json();
+    if (user.role !== 'founder') {
+      return NextResponse.json({ success: false, error: 'Only founders can apply' }, { status: 403 });
+    }
 
-    // Store application with reference to founder user ID
-    const applicationsCollection = db.collection('applications');
-    await applicationsCollection.insertOne({
-      founderId: user._id.toString(),
-      status: 'sourced',
-      ...body,
+    const body = await req.json();
+    const { companyName, deckUrl, oneLiner, github, context } = body;
+
+    // Validation
+    if (!companyName || !companyName.trim()) {
+      return NextResponse.json({ success: false, error: 'Company name is required' }, { status: 400 });
+    }
+
+    if (!deckUrl || !deckUrl.trim()) {
+      return NextResponse.json({ success: false, error: 'Deck link is required' }, { status: 400 });
+    }
+
+    // Basic URL validation
+    try {
+      new URL(deckUrl);
+    } catch {
+      return NextResponse.json({ success: false, error: 'Deck link must be a valid URL' }, { status: 400 });
+    }
+
+    if (!oneLiner || !oneLiner.trim()) {
+      return NextResponse.json({ success: false, error: 'One-liner pitch is required' }, { status: 400 });
+    }
+
+    if (oneLiner.length > 150) {
+      return NextResponse.json({ success: false, error: 'One-liner pitch must be 150 characters or less' }, { status: 400 });
+    }
+
+    // Handle optional GitHub enrichment
+    let rawSignals: any[] = [];
+    let structuredProfile: any = {
+      oneLiner,
+      description: context || oneLiner,
+      websiteUrl: undefined,
+      coldStart: true,
+      coldStartScoredPath: true,
+    };
+    let githubUsername: string | null = null;
+    let founderName = user.name || 'Founder';
+
+    if (github && github.trim()) {
+      githubUsername = extractGithubUsername(github);
+      if (githubUsername) {
+        const profileResult = await getUserProfile(githubUsername);
+        if (!profileResult.ok) {
+          return NextResponse.json({
+            success: false,
+            error: `GitHub lookup failed for @${githubUsername}: ${profileResult.message}`,
+          }, { status: 400 });
+        }
+
+        const profile = profileResult.data;
+        const reposResult = await getUserRepos(githubUsername, 5);
+        const topRepos = reposResult.ok ? reposResult.data : [];
+
+        rawSignals = [
+          {
+            type: 'github_profile',
+            source: 'github',
+            data: profile,
+            capturedAt: new Date(),
+          },
+          ...topRepos.map((r) => ({
+            type: 'github_repo',
+            source: 'github',
+            data: r,
+            capturedAt: new Date(),
+          })),
+        ];
+
+        const coldStart = !profile.bio && !profile.company && (profile.followers ?? 0) < 20;
+        const primaryLanguages = [
+          ...new Set(topRepos.map((r) => r.language).filter(Boolean) as string[]),
+        ];
+
+        structuredProfile = {
+          oneLiner: profile.bio || oneLiner,
+          description: context || profile.bio || oneLiner,
+          sectors: primaryLanguages.length > 0 ? primaryLanguages : undefined,
+          location: profile.location || undefined,
+          githubUrl: profile.html_url,
+          websiteUrl: profile.blog || undefined,
+          twitterUsername: profile.twitter_username || undefined,
+          avatarUrl: profile.avatar_url,
+          followers: profile.followers,
+          publicRepos: profile.public_repos,
+          githubCreatedAt: profile.created_at,
+          topRepos: topRepos.map((r) => ({
+            name: r.name,
+            description: r.description,
+            stars: r.stargazers_count,
+            language: r.language,
+            url: r.html_url,
+          })),
+          coldStart,
+          coldStartScoredPath: coldStart,
+        };
+
+        if (profile.name) {
+          founderName = profile.name;
+        }
+      }
+    }
+
+    // Write founder doc
+    const foundersCol = db.collection('founders');
+    const founderDoc = {
+      userId: user._id.toString(),
+      githubUsername: githubUsername || undefined,
+      name: founderName,
+      company: companyName,
+      source: 'inbound',
+      channel: 'self-reported',
+      rawSignals,
+      structuredProfile,
+      founderScore: {
+        value: 0,
+        history: [],
+      },
       createdAt: new Date(),
-    });
+    };
+
+    const founderInsert = await foundersCol.insertOne(founderDoc);
+    const founderId = founderInsert.insertedId.toString();
+
+    // Write application doc
+    const applicationsCol = db.collection('applications');
+    const applicationDoc = {
+      founderId,
+      deck: deckUrl,
+      companyInfo: {
+        name: companyName,
+        oneLiner,
+        description: context || oneLiner,
+        githubUsername: githubUsername || undefined,
+      },
+      status: 'sourced',
+      createdAt: new Date(),
+    };
+
+    await applicationsCol.insertOne(applicationDoc);
 
     return NextResponse.json({
       success: true,
-      message: 'Application received',
+      message: 'Application submitted',
     });
   } catch (error: any) {
     return NextResponse.json(
       { success: false, error: error.message },
-      { status: 400 }
+      { status: 500 }
     );
   }
 }

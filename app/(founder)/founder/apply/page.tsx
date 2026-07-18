@@ -1,26 +1,65 @@
 'use strict';
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Navbar from '@/components/Navbar';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, UploadCloud } from 'lucide-react';
+import { useSession } from 'next-auth/react';
+import { ArrowLeft, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 
 export default function FounderApply() {
+  const { data: session, status } = useSession();
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [form, setForm] = useState({
     companyName: '',
-    website: '',
-    description: '',
     deckUrl: '',
+    oneLiner: '',
+    github: '',
+    context: '',
   });
+
+  // Auth Guard: Only founders allowed. Redirect investors.
+  useEffect(() => {
+    if (status === 'unauthenticated') {
+      router.push('/login');
+    } else if (status === 'authenticated') {
+      const role = (session?.user as any)?.role;
+      if (role !== 'founder') {
+        router.push(role === 'investor' ? '/investor/dashboard' : '/role-select');
+      }
+    }
+  }, [session, status, router]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!form.companyName || !form.description) {
-      toast.error('Company Name and Description are required.');
+
+    if (!form.companyName.trim()) {
+      toast.error('Company Name is required.');
+      return;
+    }
+
+    if (!form.deckUrl.trim()) {
+      toast.error('Pitch Deck Link is required.');
+      return;
+    }
+
+    // URL validation
+    try {
+      new URL(form.deckUrl.trim());
+    } catch {
+      toast.error('Pitch Deck Link must be a valid URL.');
+      return;
+    }
+
+    if (!form.oneLiner.trim()) {
+      toast.error('One-liner pitch is required.');
+      return;
+    }
+
+    if (form.oneLiner.length > 150) {
+      toast.error('One-liner pitch cannot exceed 150 characters.');
       return;
     }
 
@@ -30,12 +69,11 @@ export default function FounderApply() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          companyInfo: {
-            name: form.companyName,
-            website: form.website,
-            description: form.description,
-          },
-          deck: form.deckUrl,
+          companyName: form.companyName.trim(),
+          deckUrl: form.deckUrl.trim(),
+          oneLiner: form.oneLiner.trim(),
+          github: form.github.trim() || undefined,
+          context: form.context.trim() || undefined,
         }),
       });
 
@@ -53,6 +91,14 @@ export default function FounderApply() {
     }
   };
 
+  if (status === 'loading') {
+    return (
+      <div className="flex-1 flex flex-col items-center justify-center bg-bg text-text min-h-screen">
+        <Loader2 className="h-8 w-8 animate-spin text-action" />
+      </div>
+    );
+  }
+
   return (
     <div className="flex-1 flex flex-col bg-bg text-text min-h-screen">
       <Navbar />
@@ -68,10 +114,13 @@ export default function FounderApply() {
             Back
           </button>
           <h1 className="font-display text-3xl font-bold tracking-tight">Apply to ScoutLayer</h1>
-          <p className="text-text-muted text-sm mt-2">Provide details about your venture. We will run our AI-first screening &amp; verification pipeline.</p>
+          <p className="text-text-muted text-sm mt-2">
+            Provide details about your venture. We will run our AI-first screening &amp; verification pipeline.
+          </p>
         </div>
 
         <form onSubmit={handleSubmit} className="bg-surface border border-border rounded-2xl p-8 flex flex-col gap-6">
+          {/* Company Name */}
           <div className="flex flex-col gap-2">
             <label className="text-xs font-medium text-text-muted uppercase tracking-wider">Company Name *</label>
             <input
@@ -80,55 +129,86 @@ export default function FounderApply() {
               placeholder="e.g. ScoutLayer"
               value={form.companyName}
               onChange={(e) => setForm({ ...form, companyName: e.target.value })}
-              className="bg-bg border border-border rounded-xl px-4 py-3 text-sm text-text transition-colors"
+              className="bg-bg border border-border rounded-xl px-4 py-3 text-sm text-text transition-colors focus:border-action"
             />
           </div>
 
+          {/* Deck Link */}
           <div className="flex flex-col gap-2">
-            <label className="text-xs font-medium text-text-muted uppercase tracking-wider">Website URL</label>
+            <label className="text-xs font-medium text-text-muted uppercase tracking-wider">Pitch Deck Link *</label>
             <input
               type="url"
-              placeholder="https://example.com"
-              value={form.website}
-              onChange={(e) => setForm({ ...form, website: e.target.value })}
-              className="bg-bg border border-border rounded-xl px-4 py-3 text-sm text-text transition-colors"
-            />
-          </div>
-
-          <div className="flex flex-col gap-2">
-            <label className="text-xs font-medium text-text-muted uppercase tracking-wider">One-liner &amp; Description *</label>
-            <textarea
               required
-              rows={4}
-              placeholder="What problem are you solving? Describe your product, team background, and metrics."
-              value={form.description}
-              onChange={(e) => setForm({ ...form, description: e.target.value })}
-              className="bg-bg border border-border rounded-xl px-4 py-3 text-sm text-text transition-colors resize-none"
-            />
-          </div>
-
-          <div className="flex flex-col gap-2">
-            <label className="text-xs font-medium text-text-muted uppercase tracking-wider">Pitch Deck Link (Optional)</label>
-            <input
-              type="url"
-              placeholder="https://drive.google.com/... (or file URL)"
+              placeholder="https://drive.google.com/file/d/... or Notion/PDF URL"
               value={form.deckUrl}
               onChange={(e) => setForm({ ...form, deckUrl: e.target.value })}
-              className="bg-bg border border-border rounded-xl px-4 py-3 text-sm text-text transition-colors"
+              className="bg-bg border border-border rounded-xl px-4 py-3 text-sm text-text transition-colors focus:border-action"
+            />
+            <span className="text-[10px] text-text-muted">
+              Accepts well-formed URLs (Google Slides, Notion, PDF, etc.). Direct file uploads are not supported.
+            </span>
+          </div>
+
+          {/* One-liner Pitch */}
+          <div className="flex flex-col gap-2">
+            <div className="flex justify-between items-center">
+              <label className="text-xs font-medium text-text-muted uppercase tracking-wider">One-liner Pitch *</label>
+              <span className={`text-[10px] font-data ${form.oneLiner.length > 150 ? 'text-flag' : 'text-text-muted'}`}>
+                {form.oneLiner.length}/150
+              </span>
+            </div>
+            <input
+              type="text"
+              required
+              maxLength={150}
+              placeholder="What are you building in one sentence?"
+              value={form.oneLiner}
+              onChange={(e) => setForm({ ...form, oneLiner: e.target.value })}
+              className="bg-bg border border-border rounded-xl px-4 py-3 text-sm text-text transition-colors focus:border-action"
             />
           </div>
 
-          <div className="border border-dashed border-border bg-bg/50 rounded-xl p-6 text-center flex flex-col items-center justify-center cursor-pointer hover:border-action/50 transition-colors">
-            <UploadCloud className="h-7 w-7 text-text-muted mb-2" />
-            <span className="text-xs text-text-muted">Upload pitch deck file directly (Under development)</span>
+          {/* GitHub Username or Profile URL */}
+          <div className="flex flex-col gap-2">
+            <label className="text-xs font-medium text-text-muted uppercase tracking-wider">GitHub Username or Profile URL (Optional)</label>
+            <input
+              type="text"
+              placeholder="e.g. @samkiel or https://github.com/samkiel"
+              value={form.github}
+              onChange={(e) => setForm({ ...form, github: e.target.value })}
+              className="bg-bg border border-border rounded-xl px-4 py-3 text-sm text-text transition-colors focus:border-action"
+            />
+            <span className="text-[10px] text-text-muted">
+              If provided, we will automatically enrich your application using your GitHub profile &amp; repos.
+            </span>
           </div>
 
+          {/* Additional Context */}
+          <div className="flex flex-col gap-2">
+            <label className="text-xs font-medium text-text-muted uppercase tracking-wider">Additional Context (Optional)</label>
+            <textarea
+              rows={4}
+              placeholder="Traction, team size, funding stage, or any other relevant information..."
+              value={form.context}
+              onChange={(e) => setForm({ ...form, context: e.target.value })}
+              className="bg-bg border border-border rounded-xl px-4 py-3 text-sm text-text transition-colors resize-none focus:border-action"
+            />
+          </div>
+
+          {/* Submit Button */}
           <button
             type="submit"
             disabled={loading}
-            className="w-full flex items-center justify-center gap-2 px-5 py-4 bg-action hover:bg-action/90 disabled:opacity-50 text-white font-semibold rounded-xl text-sm transition-all mt-2"
+            className="w-full flex items-center justify-center gap-2 px-5 py-4 bg-action hover:bg-action/90 disabled:opacity-50 text-white font-semibold rounded-xl text-sm transition-all mt-2 cursor-pointer"
           >
-            {loading ? 'Submitting...' : 'Submit Application'}
+            {loading ? (
+              <>
+                <Loader2 className="h-4 w-4 animate-spin" />
+                Submitting Application...
+              </>
+            ) : (
+              'Submit Application'
+            )}
           </button>
         </form>
       </main>

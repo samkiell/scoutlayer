@@ -1,12 +1,78 @@
 'use strict';
 'use client';
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import Navbar from '@/components/Navbar';
 import Link from 'next/link';
-import { FileText, PlusCircle, Award, Activity } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { useSession } from 'next-auth/react';
+import { FileText, PlusCircle, Award, Activity, Loader2, ExternalLink } from 'lucide-react';
+import PipelineStepper from '@/components/PipelineStepper';
 
 export default function FounderDashboard() {
+  const { data: session, status } = useSession();
+  const router = useRouter();
+  const [loading, setLoading] = useState(true);
+  const [appData, setAppData] = useState<{
+    hasApplied: boolean;
+    application?: any;
+    founder?: any;
+  } | null>(null);
+
+  // Auth Guard: Only founders allowed. Redirect investors.
+  useEffect(() => {
+    if (status === 'unauthenticated') {
+      router.push('/login');
+    } else if (status === 'authenticated') {
+      const role = (session?.user as any)?.role;
+      if (role !== 'founder') {
+        router.push(role === 'investor' ? '/investor/dashboard' : '/role-select');
+      } else {
+        // Fetch application status
+        fetch('/api/applications')
+          .then((res) => res.json())
+          .then((data) => {
+            setAppData(data);
+            setLoading(false);
+          })
+          .catch(() => {
+            setLoading(false);
+          });
+      }
+    }
+  }, [session, status, router]);
+
+  if (status === 'loading' || loading) {
+    return (
+      <div className="flex-1 flex flex-col items-center justify-center bg-bg text-text min-h-screen">
+        <Loader2 className="h-8 w-8 animate-spin text-action" />
+      </div>
+    );
+  }
+
+  const hasApplied = appData?.hasApplied ?? false;
+  const application = appData?.application;
+  const founder = appData?.founder;
+
+  // Map application.status to stepper index (sourced -> 0, screening -> 1, diligence -> 2, decided -> 3)
+  const getStageIndex = (statusStr?: string) => {
+    switch (statusStr) {
+      case 'sourced':
+        return 0;
+      case 'screening':
+        return 1;
+      case 'diligence':
+        return 2;
+      case 'decided':
+        return 3;
+      default:
+        return 0;
+    }
+  };
+
+  const currentStageIndex = getStageIndex(application?.status);
+  const founderScore = founder?.founderScore?.value;
+
   return (
     <div className="flex-1 flex flex-col bg-bg text-text min-h-screen">
       <Navbar />
@@ -19,64 +85,120 @@ export default function FounderDashboard() {
             <h1 className="font-display text-3xl font-bold tracking-tight">Founder Hub</h1>
             <p className="text-text-muted text-sm mt-2">Manage your application and track your real-time founder score.</p>
           </div>
-          <Link
-            href="/founder/apply"
-            className="flex items-center gap-2 px-5 py-3 bg-action hover:bg-action/90 text-white font-semibold rounded-xl text-sm transition-all"
-          >
-            <PlusCircle className="h-4 w-4" />
-            Apply to ScoutLayer
-          </Link>
+          {!hasApplied && (
+            <Link
+              href="/founder/apply"
+              className="flex items-center gap-2 px-5 py-3 bg-action hover:bg-action/90 text-white font-semibold rounded-xl text-sm transition-all cursor-pointer"
+            >
+              <PlusCircle className="h-4 w-4" />
+              Apply to ScoutLayer
+            </Link>
+          )}
         </div>
 
-        {/* Analytics Summary */}
-        <div className="grid sm:grid-cols-3 gap-6">
-          <div className="bg-surface border border-border rounded-xl p-6 flex items-center gap-4">
-            <div className="p-3 bg-action/10 rounded-xl text-action">
-              <Award className="h-5 w-5" />
-            </div>
-            <div>
-              <span className="text-xs text-text-muted uppercase tracking-widest font-medium">Founder Score</span>
-              <div className="font-data text-2xl font-semibold mt-0.5">85<span className="text-text-muted text-base">/100</span></div>
-            </div>
-          </div>
+        {hasApplied ? (
+          <>
+            {/* Analytics Summary */}
+            <div className="grid sm:grid-cols-2 gap-6">
+              {/* Founder Score */}
+              <div className="bg-surface border border-border rounded-xl p-6 flex items-center gap-4">
+                <div className="p-3 bg-action/10 rounded-xl text-action">
+                  <Award className="h-5 w-5" />
+                </div>
+                <div>
+                  <span className="text-xs text-text-muted uppercase tracking-widest font-medium">Founder Score</span>
+                  <div className="font-data text-2xl font-semibold mt-0.5">
+                    {founderScore ? (
+                      <>
+                        {founderScore}
+                        <span className="text-text-muted text-base">/100</span>
+                      </>
+                    ) : (
+                      <span className="text-text-muted text-sm font-normal">Not yet scored</span>
+                    )}
+                  </div>
+                </div>
+              </div>
 
-          <div className="bg-surface border border-border rounded-xl p-6 flex items-center gap-4">
-            <div className="p-3 bg-trust/10 rounded-xl text-trust">
-              <Activity className="h-5 w-5" />
+              {/* Pipeline Status */}
+              <div className="bg-surface border border-border rounded-xl p-6 flex items-center gap-4">
+                <div className="p-3 bg-trust/10 rounded-xl text-trust">
+                  <Activity className="h-5 w-5" />
+                </div>
+                <div>
+                  <span className="text-xs text-text-muted uppercase tracking-widest font-medium">Pipeline Status</span>
+                  <div className="font-data text-lg font-semibold mt-0.5 uppercase text-trust">
+                    {application?.status || 'sourced'}
+                  </div>
+                </div>
+              </div>
             </div>
-            <div>
-              <span className="text-xs text-text-muted uppercase tracking-widest font-medium">Pipeline Status</span>
-              <div className="font-data text-lg font-semibold mt-0.5 text-text-muted">No active run</div>
-            </div>
-          </div>
 
-          <div className="bg-surface border border-border rounded-xl p-6 flex items-center gap-4">
-            <div className="p-3 bg-trust/10 rounded-xl text-trust">
-              <FileText className="h-5 w-5" />
+            {/* Stepper Card */}
+            <div className="bg-surface border border-border rounded-2xl p-8 flex flex-col gap-6">
+              <h3 className="font-display text-lg font-bold text-text">Application Pipeline</h3>
+              <PipelineStepper currentStage={currentStageIndex} />
             </div>
-            <div>
-              <span className="text-xs text-text-muted uppercase tracking-widest font-medium">Verified Claims</span>
-              <div className="font-data text-2xl font-semibold mt-0.5">0</div>
-            </div>
-          </div>
-        </div>
 
-        {/* Empty State */}
-        <div className="flex-1 flex flex-col items-center justify-center border border-dashed border-border rounded-2xl py-20 px-6 text-center">
-          <div className="p-4 bg-surface border border-border rounded-xl mb-6">
-            <FileText className="h-8 w-8 text-text-muted" />
+            {/* Application Data (Read-only) */}
+            <div className="bg-surface border border-border rounded-2xl p-8 flex flex-col gap-6">
+              <h3 className="font-display text-lg font-bold text-text">Submitted Details</h3>
+
+              <div className="grid gap-6">
+                <div>
+                  <span className="text-xs text-text-muted uppercase tracking-wider font-semibold">Company Name</span>
+                  <p className="text-text mt-1 text-base font-medium">{application?.companyInfo?.name}</p>
+                </div>
+
+                <div>
+                  <span className="text-xs text-text-muted uppercase tracking-wider font-semibold">One-liner Pitch</span>
+                  <p className="text-text mt-1 text-sm">{application?.companyInfo?.oneLiner}</p>
+                </div>
+
+                {application?.companyInfo?.description && (
+                  <div>
+                    <span className="text-xs text-text-muted uppercase tracking-wider font-semibold">Description / Context</span>
+                    <p className="text-text-muted mt-1 text-sm whitespace-pre-wrap leading-relaxed">
+                      {application.companyInfo.description}
+                    </p>
+                  </div>
+                )}
+
+                <div>
+                  <span className="text-xs text-text-muted uppercase tracking-wider font-semibold">Pitch Deck Link</span>
+                  <div className="mt-1">
+                    <a
+                      href={application?.deck}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-2 text-action hover:underline text-sm font-semibold"
+                    >
+                      View Pitch Deck
+                      <ExternalLink className="h-4 w-4" />
+                    </a>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </>
+        ) : (
+          /* Empty State */
+          <div className="flex-1 flex flex-col items-center justify-center border border-dashed border-border rounded-2xl py-20 px-6 text-center bg-surface/20">
+            <div className="p-4 bg-surface border border-border rounded-xl mb-6">
+              <FileText className="h-8 w-8 text-text-muted" />
+            </div>
+            <h2 className="font-display text-xl font-bold text-text">No Applications Submitted</h2>
+            <p className="text-text-muted text-sm max-w-sm mt-2 mb-8">
+              You haven&apos;t submitted any pitch decks or company information yet. Get started by clicking the button below.
+            </p>
+            <Link
+              href="/founder/apply"
+              className="px-6 py-3 bg-action hover:bg-action/90 text-white font-semibold rounded-xl text-sm transition-all cursor-pointer"
+            >
+              Submit Application
+            </Link>
           </div>
-          <h2 className="font-display text-xl font-bold text-text">No Applications Submitted</h2>
-          <p className="text-text-muted text-sm max-w-sm mt-2 mb-8">
-            You haven&apos;t submitted any pitch decks or company information yet. Get started by clicking the button below.
-          </p>
-          <Link
-            href="/founder/apply"
-            className="px-6 py-3 bg-action hover:bg-action/90 text-white font-semibold rounded-xl text-sm transition-all"
-          >
-            Submit Application
-          </Link>
-        </div>
+        )}
       </main>
     </div>
   );
