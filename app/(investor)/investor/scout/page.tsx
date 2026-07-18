@@ -4,7 +4,7 @@
 import React, { useState } from 'react';
 import Navbar from '@/components/Navbar';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, Compass, Github, Search, Rss } from 'lucide-react';
+import { ArrowLeft, Compass, Code, Search, Rss } from 'lucide-react';
 import { toast } from 'sonner';
 
 export default function Scout() {
@@ -71,9 +71,10 @@ export default function Scout() {
                     : 'border-zinc-800 bg-zinc-950/40 hover:border-zinc-700 text-zinc-400'
                 }`}
               >
-                <Github className="h-5 w-5" />
+                <Code className="h-5 w-5" />
                 GitHub (Primary)
               </button>
+
 
               <button
                 type="button"
