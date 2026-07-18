@@ -5,6 +5,8 @@ import { useSession, signIn } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { ArrowRight, Target, Award, Shield } from 'lucide-react';
 import EvidenceReceipt from '@/components/EvidenceReceipt';
+import LandingNavbar from '@/components/LandingNavbar';
+import Footer from '@/components/Footer';
 
 export default function Home() {
   const { data: session, status } = useSession();
@@ -33,6 +35,8 @@ export default function Home() {
 
   return (
     <div className="flex-1 flex flex-col bg-bg text-text">
+      <LandingNavbar />
+
       {/* Hero section */}
       <main className="flex-1 max-w-5xl mx-auto px-6 flex flex-col items-center justify-center text-center py-24">
         <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-surface border border-border text-xs font-medium text-text-muted mb-10">
@@ -100,6 +104,8 @@ export default function Home() {
           />
         </div>
       </main>
+
+      <Footer />
     </div>
   );
 }
