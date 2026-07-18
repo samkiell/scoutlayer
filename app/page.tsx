@@ -7,6 +7,7 @@ import { ArrowRight } from 'lucide-react';
 import EvidenceReceipt from '@/components/EvidenceReceipt';
 import LandingNavbar from '@/components/LandingNavbar';
 import Footer from '@/components/Footer';
+import PipelineStepper from '@/components/PipelineStepper';
 
 export default function Home() {
   const { data: session, status } = useSession();
@@ -33,13 +34,33 @@ export default function Home() {
     );
   }
 
+  // Define steps with descriptions for "How It Works"
+  const pipelineExplanation = [
+    {
+      label: 'Sourcing',
+      desc: 'Founders apply, or we find them on GitHub before they start fundraising.',
+    },
+    {
+      label: 'Screening',
+      desc: 'Scored on founder, market, and idea fit — independently, never averaged.',
+    },
+    {
+      label: 'Diligence',
+      desc: 'Every claim checked against real evidence. No invented traction.',
+    },
+    {
+      label: 'Decision',
+      desc: 'A clear memo an investor can act on, gaps flagged honestly.',
+    },
+  ];
+
   return (
     <div className="flex-1 flex flex-col bg-bg text-text">
       <LandingNavbar />
 
-      <main className="flex-1 max-w-5xl mx-auto px-6 w-full">
+      <main className="flex-1 max-w-5xl mx-auto px-6 w-full flex flex-col gap-28 pb-28">
         {/* Hero — left-aligned, no decoration */}
-        <section className="pt-24 pb-20 sm:pt-32 sm:pb-28 max-w-2xl">
+        <section className="pt-24 max-w-2xl">
           <h1 className="font-display text-4xl sm:text-5xl font-bold tracking-tight leading-[1.1] mb-5">
             Source founders on evidence,
             <br />
@@ -58,40 +79,97 @@ export default function Home() {
           </button>
         </section>
 
-        {/* What it does — two columns, text + receipt */}
-        <section className="pb-20 sm:pb-28 grid sm:grid-cols-2 gap-12 items-start border-t border-border pt-16">
+        {/* 1. How It Works Section */}
+        <section id="how-it-works" className="border-t border-border pt-16 flex flex-col gap-10">
           <div>
-            <h2 className="font-display text-xl font-semibold mb-4">How it works</h2>
-            <ol className="flex flex-col gap-4 text-sm text-text-muted">
-              <li className="flex gap-3">
-                <span className="font-data text-action font-semibold shrink-0">01</span>
-                <span>Founders apply directly, or investors run outbound scans on GitHub and other channels.</span>
-              </li>
-              <li className="flex gap-3">
-                <span className="font-data text-action font-semibold shrink-0">02</span>
-                <span>AI agents score each application across three independent axes — Founder, Market, Idea vs. Market.</span>
-              </li>
-              <li className="flex gap-3">
-                <span className="font-data text-action font-semibold shrink-0">03</span>
-                <span>A verification agent cross-checks every claim against real sources. Each claim gets its own trust score.</span>
-              </li>
-              <li className="flex gap-3">
-                <span className="font-data text-action font-semibold shrink-0">04</span>
-                <span>An investment memo is generated with flagged gaps — never fabricated data.</span>
-              </li>
-            </ol>
+            <h2 className="font-display text-2xl font-bold tracking-tight mb-2">From signal to decision</h2>
+            <p className="text-text-muted text-sm font-body">Our structured pipeline automates verification end-to-end.</p>
           </div>
+          
+          {/* Horizontal layout on desktop / Stacked on mobile handled via grid/stepper flex wrapper */}
+          <div className="flex flex-col gap-8 bg-surface border border-border p-8 rounded-xl">
+            <PipelineStepper currentStage={1} />
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mt-6 pt-6 border-t border-border/50">
+              {pipelineExplanation.map((step, idx) => (
+                <div key={idx} className="flex flex-col gap-1.5">
+                  <span className="font-data text-xs text-text-muted uppercase tracking-wider">
+                    {idx + 1}. {step.label}
+                  </span>
+                  <p className="text-sm text-text-muted leading-relaxed font-body">
+                    {step.desc}
+                  </p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
 
-          <div className="flex flex-col gap-3">
-            <span className="text-xs font-data text-text-muted uppercase tracking-wider">Sample output</span>
+        {/* 2. Evidence Receipt Showcase Section */}
+        <section id="evidence-showcase" className="border-t border-border pt-16 grid md:grid-cols-2 gap-12 items-center">
+          <div className="flex flex-col gap-4">
+            <h2 className="font-display text-2xl font-bold tracking-tight">Every score has a receipt</h2>
+            <p className="text-text-muted text-sm leading-relaxed max-w-md font-body">
+              No black-box scores. Click any result and see exactly what backed it. We generate receipts detailing the claims, sources, and verifier confidence.
+            </p>
+          </div>
+          <div className="flex justify-start md:justify-end">
             <EvidenceReceipt
-              claim="Previously raised $1M seed from Y Combinator"
-              source="https://techcrunch.com/2024/03/innovate-ai-seed"
-              confidence={92}
+              claim="500+ GitHub stars in 60 days"
+              source="https://github.com/scoutlayer/core-engine"
+              confidence={94}
               verifiedBy="tavily"
-              timestamp="2024-03-15 14:32 UTC"
+              timestamp="2026-07-18 21:50 UTC"
             />
           </div>
+        </section>
+
+        {/* 3. For Founders / For Investors Section */}
+        <section id="roles" className="border-t border-border pt-16 grid md:grid-cols-2 gap-8">
+          {/* Founders Card */}
+          <div className="bg-surface border border-border rounded-xl p-8 flex flex-col justify-between items-start min-h-[220px]">
+            <div>
+              <h3 className="font-display text-xl font-bold text-text mb-3">For Founders</h3>
+              <p className="text-sm text-text-muted leading-relaxed mb-6 font-body">
+                Apply once. Get seen on evidence, not who you know. Track your active verifications and claim receipts.
+              </p>
+            </div>
+            <button
+              onClick={() => signIn('google')}
+              className="px-5 py-2.5 bg-action hover:bg-action/90 text-white text-sm font-medium rounded-lg transition-colors"
+            >
+              Apply as a Founder
+            </button>
+          </div>
+
+          {/* Investors Card */}
+          <div className="bg-surface border border-border rounded-xl p-8 flex flex-col justify-between items-start min-h-[220px]">
+            <div>
+              <h3 className="font-display text-xl font-bold text-text mb-3">For Investors</h3>
+              <p className="text-sm text-text-muted leading-relaxed mb-6 font-body">
+                Source and screen founders before the rest of the market sees them. Access detailed memos and verified signals.
+              </p>
+            </div>
+            <button
+              onClick={() => signIn('google')}
+              className="px-5 py-2.5 bg-action hover:bg-action/90 text-white text-sm font-medium rounded-lg transition-colors"
+            >
+              Sign in as an Investor
+            </button>
+          </div>
+        </section>
+
+        {/* 4. Final CTA Section */}
+        <section className="border-t border-border pt-16 pb-8 flex flex-col items-start gap-6 max-w-xl">
+          <h2 className="font-display text-2xl font-bold tracking-tight">Ready to see it work?</h2>
+          <p className="text-text-muted text-sm leading-relaxed font-body">
+            Get started by logging in and configuring your role. Start screening or verifying claims instantly.
+          </p>
+          <button
+            onClick={() => signIn('google')}
+            className="px-6 py-3 bg-action hover:bg-action/90 text-white font-medium rounded-lg text-sm transition-colors"
+          >
+            Enter Platform
+          </button>
         </section>
       </main>
 
