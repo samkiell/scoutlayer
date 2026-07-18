@@ -11,10 +11,9 @@ export default function LandingNavbar() {
   return (
     <nav className="sticky top-0 z-50 bg-bg border-b border-surface">
       <div className="max-w-5xl mx-auto px-6 py-4 flex items-center justify-between">
-        {/* Left: Wordmark */}
-        <span className="font-display font-bold text-lg tracking-tight text-text">
+        <Link href="/" className="font-display font-bold text-lg tracking-tight text-text hover:text-action transition-colors">
           Scout<span className="text-action">Layer</span>
-        </span>
+        </Link>
 
         {/* Right: Desktop links */}
         <div className="hidden md:flex items-center gap-6">

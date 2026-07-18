@@ -13,10 +13,9 @@ export default function Login() {
       <LandingNavbar />
 
       <main className="flex-1 flex flex-col items-center justify-center px-4 py-16">
-        {/* Wordmark */}
-        <span className="font-display font-bold text-xl tracking-tight text-text mb-8">
+        <Link href="/" className="font-display font-bold text-xl tracking-tight text-text mb-8 hover:text-action transition-colors">
           Scout<span className="text-action">Layer</span>
-        </span>
+        </Link>
 
         {/* Card */}
         <div className="w-full max-w-sm bg-surface border border-border rounded-xl p-8">
