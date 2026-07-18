@@ -7,12 +7,11 @@ import { useRouter } from 'next/navigation';
 import {
   ArrowLeft,
   Compass,
-  Plus,
   X,
   CheckCircle2,
   AlertTriangle,
   Loader2,
-  Github,
+  Code2,
   Star,
   Calendar,
   ExternalLink,
@@ -390,7 +389,7 @@ export default function ScoutPage() {
                   className="flex items-center justify-between bg-surface border border-border rounded-xl px-5 py-4 hover:border-action/40 transition-colors"
                 >
                   <div className="flex items-center gap-3">
-                    <Github className="h-4 w-4 text-text-muted shrink-0" />
+                    <Code2 className="h-4 w-4 text-text-muted shrink-0" />
                     <div>
                       <div className="flex items-center gap-2">
                         <span className="font-medium text-sm">@{f.username}</span>
