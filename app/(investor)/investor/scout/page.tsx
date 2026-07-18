@@ -65,6 +65,7 @@ export default function ScoutPage() {
   const [founders, setFounders] = useState<FounderEntry[]>([]);
   const [runId, setRunId] = useState<string | null>(null);
   const logRef = useRef<HTMLDivElement>(null);
+  const logContainerRef = useRef<HTMLDivElement>(null);
 
   const addEvent = useCallback((evt: SourcingEvent) => {
     setEvents((prev) => [...prev, evt]);
@@ -105,6 +106,13 @@ export default function ScoutPage() {
     const thesis: Thesis = { keywords };
     if (minStars) thesis.minStars = parseInt(minStars, 10);
     if (createdAfter) thesis.createdAfter = createdAfter;
+
+    // Scroll down to center the log container area in the viewport
+    setTimeout(() => {
+      if (logContainerRef.current) {
+        logContainerRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    }, 50);
 
     try {
       const res = await fetch('/api/scout', {
@@ -334,8 +342,8 @@ export default function ScoutPage() {
         </form>
 
         {/* Live event log */}
-        {events.length > 0 && (
-          <div className="bg-surface border border-border rounded-2xl overflow-hidden">
+        {(status !== 'idle' || events.length > 0) && (
+          <div ref={logContainerRef} className="bg-surface border border-border rounded-2xl overflow-hidden scroll-mt-20">
             <div className="flex items-center justify-between px-6 py-4 border-b border-border">
               <span className="text-xs font-medium text-text-muted uppercase tracking-wider font-data">
                 Live Log
