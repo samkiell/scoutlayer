@@ -8,7 +8,7 @@ import { useSearchParams } from 'next/navigation';
 import LandingNavbar from '@/components/LandingNavbar';
 import Footer from '@/components/Footer';
 
-export default function Login() {
+function LoginContent() {
   const searchParams = useSearchParams();
   const intent = searchParams.get('intent');
 
@@ -69,5 +69,17 @@ export default function Login() {
 
       <Footer />
     </div>
+  );
+}
+
+export default function Login() {
+  return (
+    <React.Suspense fallback={
+      <div className="min-h-screen bg-bg text-text flex items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-action"></div>
+      </div>
+    }>
+      <LoginContent />
+    </React.Suspense>
   );
 }
