@@ -25,10 +25,23 @@ export const authOptions: NextAuthOptions = {
         const existingUser = await usersCollection.findOne({ email: user.email });
 
         if (!existingUser) {
-          // Create new user without a role initially
+          // Check for intent cookie to automatically set role
+          let roleIntent: string | undefined;
+          try {
+            const { cookies } = require('next/headers');
+            const cookieStore = await cookies();
+            roleIntent = cookieStore.get('scoutlayer_role_intent')?.value;
+          } catch (e) {
+            console.error('Error reading cookies in NextAuth signIn callback:', e);
+          }
+
+          const resolvedRole = (roleIntent === 'founder' || roleIntent === 'investor') ? roleIntent : undefined;
+
+          // Create new user with resolved role from intent if present
           await usersCollection.insertOne({
             email: user.email,
             name: user.name || '',
+            role: resolvedRole,
             createdAt: new Date(),
           });
         }

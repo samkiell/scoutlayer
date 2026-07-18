@@ -20,7 +20,20 @@ export default function Home() {
       if (!role) {
         router.push('/role-select');
       } else if (role === 'founder') {
-        router.push('/founder/dashboard');
+        // Query to check if founder has applied (using a mock check or API check; let's check via a client-side fetch or helper)
+        fetch('/api/applications')
+          .then((res) => res.json())
+          .then((data) => {
+            if (data.hasApplied) {
+              router.push('/founder/dashboard');
+            } else {
+              router.push('/founder/apply');
+            }
+          })
+          .catch(() => {
+            // Fallback to dashboard if API fails
+            router.push('/founder/dashboard');
+          });
       } else if (role === 'investor') {
         router.push('/investor/dashboard');
       }

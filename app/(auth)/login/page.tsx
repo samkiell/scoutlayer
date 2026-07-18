@@ -4,10 +4,31 @@
 import React from 'react';
 import { signIn } from 'next-auth/react';
 import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
 import LandingNavbar from '@/components/LandingNavbar';
 import Footer from '@/components/Footer';
 
 export default function Login() {
+  const searchParams = useSearchParams();
+  const intent = searchParams.get('intent');
+
+  let subheading = 'Sign in to ScoutLayer.';
+  if (intent === 'founder') {
+    subheading = 'Sign in to apply and track your founder profile.';
+  } else if (intent === 'investor') {
+    subheading = 'Sign in to source, screen, and back exceptional founders.';
+  }
+
+  const handleSignIn = () => {
+    if (intent) {
+      document.cookie = `scoutlayer_role_intent=${intent}; path=/; max-age=3600; SameSite=Lax`;
+    } else {
+      // Clear intent cookie if login is neutral
+      document.cookie = 'scoutlayer_role_intent=; path=/; max-age=0; SameSite=Lax';
+    }
+    signIn('google', { callbackUrl: '/' });
+  };
+
   return (
     <div className="min-h-screen bg-bg text-text flex flex-col justify-between">
       <LandingNavbar />
@@ -20,11 +41,11 @@ export default function Login() {
         {/* Card */}
         <div className="w-full max-w-sm bg-surface border border-border rounded-xl p-8">
           <p className="text-text-muted text-sm text-center mb-6">
-            Sign in to source, screen, and back exceptional founders.
+            {subheading}
           </p>
 
           <button
-            onClick={() => signIn('google', { callbackUrl: '/' })}
+            onClick={handleSignIn}
             className="w-full flex items-center justify-center gap-3 px-5 py-3 bg-action hover:bg-action/90 text-white font-medium rounded-lg text-sm transition-colors"
           >
             {/* Google G icon — inline SVG */}
