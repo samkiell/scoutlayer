@@ -3,7 +3,7 @@
 import React, { useEffect } from 'react';
 import { useSession, signIn } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
-import { ArrowRight, Target, Award, Shield } from 'lucide-react';
+import { ArrowRight } from 'lucide-react';
 import EvidenceReceipt from '@/components/EvidenceReceipt';
 import LandingNavbar from '@/components/LandingNavbar';
 import Footer from '@/components/Footer';
@@ -37,72 +37,62 @@ export default function Home() {
     <div className="flex-1 flex flex-col bg-bg text-text">
       <LandingNavbar />
 
-      {/* Hero section */}
-      <main className="flex-1 max-w-5xl mx-auto px-6 flex flex-col items-center justify-center text-center py-24">
-        <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-surface border border-border text-xs font-medium text-text-muted mb-10">
-          <span className="flex h-2 w-2 rounded-full bg-action animate-pulse"></span>
-          Maschmeyer Group · Challenge 02
-        </div>
-
-        <h1 className="font-display text-5xl sm:text-7xl font-bold tracking-tight mb-6 text-text">
-          Evidence-Backed
-          <br />
-          Venture Sourcing
-        </h1>
-
-        <p className="text-lg sm:text-xl text-text-muted max-w-2xl mb-10 leading-relaxed">
-          ScoutLayer is an AI-first venture sourcing and screening platform.
-          Surface exceptional founders on verifiable evidence, not network access.
-        </p>
-
-        <div className="flex flex-col sm:flex-row gap-4 mb-20">
+      <main className="flex-1 max-w-5xl mx-auto px-6 w-full">
+        {/* Hero — left-aligned, no decoration */}
+        <section className="pt-24 pb-20 sm:pt-32 sm:pb-28 max-w-2xl">
+          <h1 className="font-display text-4xl sm:text-5xl font-bold tracking-tight leading-[1.1] mb-5">
+            Source founders on evidence,
+            <br />
+            not warm intros.
+          </h1>
+          <p className="text-text-muted text-lg leading-relaxed mb-8 max-w-lg">
+            ScoutLayer runs AI screening and claim verification on every founder application.
+            Every score traces back to a real source. No black boxes.
+          </p>
           <button
             onClick={() => signIn('google')}
-            className="flex items-center justify-center gap-2 px-8 py-4 bg-action hover:bg-action/90 text-white font-semibold rounded-xl text-md transition-all group"
+            className="inline-flex items-center gap-2 px-6 py-3 bg-action hover:bg-action/90 text-white font-medium rounded-lg text-sm transition-colors group"
           >
-            Enter Platform
-            <ArrowRight className="h-5 w-5 transition-transform group-hover:translate-x-1" />
+            Get Started
+            <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
           </button>
-        </div>
+        </section>
 
-        {/* Feature Highlights */}
-        <div className="grid sm:grid-cols-3 gap-6 w-full border-t border-border pt-16">
-          <div className="flex flex-col items-center p-6 bg-surface border border-border rounded-xl">
-            <div className="p-3 bg-action/10 rounded-xl mb-4 text-action">
-              <Target className="h-6 w-6" />
-            </div>
-            <h3 className="font-display font-semibold text-lg mb-2 text-text">Outbound Sourcing</h3>
-            <p className="text-sm text-text-muted">Scan developer channels like GitHub to discover elite technical talent early.</p>
+        {/* What it does — two columns, text + receipt */}
+        <section className="pb-20 sm:pb-28 grid sm:grid-cols-2 gap-12 items-start border-t border-border pt-16">
+          <div>
+            <h2 className="font-display text-xl font-semibold mb-4">How it works</h2>
+            <ol className="flex flex-col gap-4 text-sm text-text-muted">
+              <li className="flex gap-3">
+                <span className="font-data text-action font-semibold shrink-0">01</span>
+                <span>Founders apply directly, or investors run outbound scans on GitHub and other channels.</span>
+              </li>
+              <li className="flex gap-3">
+                <span className="font-data text-action font-semibold shrink-0">02</span>
+                <span>AI agents score each application across three independent axes — Founder, Market, Idea vs. Market.</span>
+              </li>
+              <li className="flex gap-3">
+                <span className="font-data text-action font-semibold shrink-0">03</span>
+                <span>A verification agent cross-checks every claim against real sources. Each claim gets its own trust score.</span>
+              </li>
+              <li className="flex gap-3">
+                <span className="font-data text-action font-semibold shrink-0">04</span>
+                <span>An investment memo is generated with flagged gaps — never fabricated data.</span>
+              </li>
+            </ol>
           </div>
 
-          <div className="flex flex-col items-center p-6 bg-surface border border-border rounded-xl">
-            <div className="p-3 bg-action/10 rounded-xl mb-4 text-action">
-              <Award className="h-6 w-6" />
-            </div>
-            <h3 className="font-display font-semibold text-lg mb-2 text-text">3-Axis Screening</h3>
-            <p className="text-sm text-text-muted">AI analysis of Founder, Market, and Idea VS Market trends without averaging.</p>
+          <div className="flex flex-col gap-3">
+            <span className="text-xs font-data text-text-muted uppercase tracking-wider">Sample output</span>
+            <EvidenceReceipt
+              claim="Previously raised $1M seed from Y Combinator"
+              source="https://techcrunch.com/2024/03/innovate-ai-seed"
+              confidence={92}
+              verifiedBy="tavily"
+              timestamp="2024-03-15 14:32 UTC"
+            />
           </div>
-
-          <div className="flex flex-col items-center p-6 bg-surface border border-border rounded-xl">
-            <div className="p-3 bg-trust/10 rounded-xl mb-4 text-trust">
-              <Shield className="h-6 w-6" />
-            </div>
-            <h3 className="font-display font-semibold text-lg mb-2 text-text">Trust Verification</h3>
-            <p className="text-sm text-text-muted">Tavily-backed claim checker generates real trust scores with full citations.</p>
-          </div>
-        </div>
-
-        {/* Evidence Receipt Preview */}
-        <div className="mt-16 flex flex-col items-center">
-          <h2 className="font-display text-lg font-semibold text-text-muted mb-6">Every claim needs a receipt</h2>
-          <EvidenceReceipt
-            claim="Previously raised $1M seed round from Y Combinator"
-            source="https://techcrunch.com/2024/03/innovate-ai-seed"
-            confidence={92}
-            verifiedBy="tavily"
-            timestamp="2024-03-15 14:32 UTC"
-          />
-        </div>
+        </section>
       </main>
 
       <Footer />
