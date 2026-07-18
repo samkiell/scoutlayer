@@ -128,7 +128,7 @@ export default function Home() {
           </div>
           <div className="flex justify-start md:justify-end">
             <EvidenceReceipt
-              claim="500+ GitHub stars in 60 days"
+              claim="Example: 500+ GitHub stars in 60 days"
               source="https://github.com/scoutlayer/core-engine"
               confidence={94}
               verifiedBy="tavily"

@@ -156,15 +156,11 @@ export async function POST(req: Request) {
 
     if (github && github.trim()) {
       githubUsername = extractGithubUsername(github);
-      console.log(`[GitHub Enrichment] Extracted username: "${githubUsername}" from input: "${github}"`);
       
       if (githubUsername) {
-        console.log(`[GitHub Enrichment] Triggering getUserProfile for: ${githubUsername}`);
         const profileResult = await getUserProfile(githubUsername);
         
-        console.log(`[GitHub Enrichment] getUserProfile response ok: ${profileResult.ok}`);
         if (!profileResult.ok) {
-          console.error(`[GitHub Enrichment] getUserProfile failed: ${profileResult.message}`);
           return NextResponse.json({
             success: false,
             error: `GitHub lookup failed for @${githubUsername}: ${profileResult.message}`,
@@ -172,10 +168,8 @@ export async function POST(req: Request) {
         }
 
         const profile = profileResult.data;
-        console.log(`[GitHub Enrichment] Triggering getUserRepos for: ${githubUsername}`);
         const reposResult = await getUserRepos(githubUsername, 5);
         
-        console.log(`[GitHub Enrichment] getUserRepos response ok: ${reposResult.ok}`);
         const topRepos = reposResult.ok ? reposResult.data : [];
 
         rawSignals = [
@@ -224,7 +218,6 @@ export async function POST(req: Request) {
         if (profile.name) {
           founderName = profile.name;
         }
-        console.log(`[GitHub Enrichment] Successfully enriched structuredProfile for @${githubUsername}`);
       }
     }
 
