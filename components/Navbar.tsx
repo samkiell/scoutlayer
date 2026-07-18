@@ -11,12 +11,13 @@ export default function Navbar() {
 
   return (
     <nav className="border-b border-border bg-bg/80 backdrop-blur-md sticky top-0 z-50 px-6 py-4 flex justify-between items-center">
-      <div className="flex items-center gap-3">
-        <div className="bg-action w-8 h-8 rounded-lg flex items-center justify-center">
-          <span className="text-white font-display font-bold text-sm">SL</span>
-        </div>
-        <Link href="/" className="font-display font-bold text-lg tracking-tight text-text">
-          Scout<span className="text-action">Layer</span>
+      <div className="flex items-center">
+        <Link href="/" className="flex items-center">
+          <img
+            src="/assets/logo.png"
+            alt="ScoutLayer"
+            className="h-11 w-auto object-contain"
+          />
         </Link>
       </div>
 

@@ -133,9 +133,13 @@ export async function searchRepos(
     createdAfter,
   } = options;
 
-  let q = query;
-  if (minStars !== undefined) q += ` stars:>=${minStars}`;
-  if (createdAfter) q += ` created:>=${createdAfter}`;
+  // Split the query by spaces or commas, filter out empty strings, and join back.
+  // In GitHub Search, keywords separated by spaces are implicitly ANDed together.
+  // We'll strip any broad OR-like formatting to ensure clean AND semantics.
+  const queryTerms = query.split(/[\s,]+/).filter(Boolean).join(' ');
+  let q = queryTerms;
+  if (q && minStars !== undefined) q += ` stars:>=${minStars}`;
+  if (q && createdAfter) q += ` created:>=${createdAfter}`;
 
   const params = new URLSearchParams({
     q,

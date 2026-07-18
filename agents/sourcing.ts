@@ -24,8 +24,14 @@ export type SourcingEvent =
   | { type: 'candidate_structured'; username: string; coldStart: boolean; founderId: string }
   | { type: 'candidate_saved'; username: string; founderId: string; applicationId: string }
   | { type: 'rate_limited'; message: string }
+  | { type: 'batch_capped'; processed: number; remaining: number; message: string }
   | { type: 'run_done'; found: number; skipped: number; message: string }
   | { type: 'run_error'; message: string };
+
+export interface SourcingOptions {
+  /** Max new candidates to process per run. Default: 15 (Vercel 60s hobby limit). */
+  candidateCap?: number;
+}
 
 export interface SourcingResult {
   runId: string;
@@ -35,8 +41,10 @@ export interface SourcingResult {
 
 /** Main entry point — call this from the API route. Yields events via an async generator. */
 export async function* runSourcingAgent(
-  thesis: Thesis
+  thesis: Thesis,
+  options: SourcingOptions = {}
 ): AsyncGenerator<SourcingEvent, SourcingResult, unknown> {
+  const cap = options.candidateCap ?? 15;
   const client = await clientPromise;
   const db = client.db();
 
@@ -136,8 +144,22 @@ export async function* runSourcingAgent(
       }
     }
 
-    // ── 6. Process each new candidate ────────────────────────────────────────
-    for (const seedRepo of newCandidates) {
+    // ── 6. Process each new candidate (enforcing cap) ───────────────────────
+    for (let i = 0; i < newCandidates.length; i++) {
+      if (foundersAdded >= cap) {
+        const remaining = newCandidates.length - i;
+        const capMsg = `${remaining} more matches available. Refine your query or re-run to continue.`;
+        yield {
+          type: 'batch_capped',
+          processed: foundersAdded,
+          remaining,
+          message: capMsg,
+        };
+        await appendLog(`Batch size capped. ${remaining} candidates remaining.`, 'warn');
+        break;
+      }
+
+      const seedRepo = newCandidates[i];
       const username = seedRepo.owner.login;
       yield {
         type: 'candidate_found',

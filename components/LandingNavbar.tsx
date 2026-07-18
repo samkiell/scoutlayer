@@ -11,8 +11,12 @@ export default function LandingNavbar() {
   return (
     <nav className="sticky top-0 z-50 bg-bg border-b border-surface">
       <div className="max-w-5xl mx-auto px-6 py-4 flex items-center justify-between">
-        <Link href="/" className="font-display font-bold text-lg tracking-tight text-text hover:text-action transition-colors">
-          Scout<span className="text-action">Layer</span>
+        <Link href="/" className="flex items-center">
+          <img
+            src="/assets/logo.png"
+            alt="ScoutLayer"
+            className="h-11 w-auto object-contain"
+          />
         </Link>
 
         {/* Right: Desktop links */}

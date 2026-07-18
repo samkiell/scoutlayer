@@ -197,6 +197,7 @@ export default function ScoutPage() {
       case 'candidate_structured': return '🧩';
       case 'candidate_saved': return '✅';
       case 'rate_limited':    return '⚠️';
+      case 'batch_capped':    return '⚠️';
       case 'run_done':        return '🎯';
       case 'run_error':       return '❌';
       default:                return '·';
@@ -204,7 +205,7 @@ export default function ScoutPage() {
   };
 
   const getEventColor = (type: string) => {
-    if (type === 'run_error' || type === 'rate_limited') return 'text-flag';
+    if (type === 'run_error' || type === 'rate_limited' || type === 'batch_capped') return 'text-flag';
     if (type === 'candidate_saved' || type === 'run_done') return 'text-trust';
     if (type === 'candidate_skip') return 'text-text-muted';
     return 'text-text';
