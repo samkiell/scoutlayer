@@ -151,21 +151,19 @@ export default function FounderApply() {
 
           {/* One-liner Pitch */}
           <div className="flex flex-col gap-2">
-            <div className="flex justify-between items-center">
-              <label className="text-xs font-medium text-text-muted uppercase tracking-wider">One-liner Pitch *</label>
-              <span className={`text-[10px] font-data ${form.oneLiner.length > 150 ? 'text-flag' : 'text-text-muted'}`}>
-                {form.oneLiner.length}/150
-              </span>
-            </div>
-            <input
-              type="text"
+            <label className="text-xs font-medium text-text-muted uppercase tracking-wider">One-liner Pitch *</label>
+            <textarea
               required
+              rows={3}
               maxLength={150}
               placeholder="What are you building in one sentence?"
               value={form.oneLiner}
               onChange={(e) => setForm({ ...form, oneLiner: e.target.value })}
-              className="bg-bg border border-border rounded-xl px-4 py-3 text-sm text-text transition-colors focus:border-action"
+              className="bg-bg border border-border rounded-xl px-4 py-3 text-sm text-text transition-colors resize-none focus:border-action"
             />
+            <span className={`text-[10px] font-data text-right ${form.oneLiner.length > 150 ? 'text-flag' : 'text-text-muted'}`}>
+              {form.oneLiner.length}/150
+            </span>
           </div>
 
           {/* GitHub Username or Profile URL */}

@@ -6,7 +6,13 @@ import { getUserProfile, getUserRepos } from '@/lib/sources/github';
 
 function extractGithubUsername(input: string): string | null {
   if (!input) return null;
-  const cleaned = input.trim();
+  let cleaned = input.trim();
+  
+  // Handle protocol-less urls like github.com/username
+  if (!cleaned.startsWith('http://') && !cleaned.startsWith('https://') && cleaned.includes('github.com')) {
+    cleaned = 'https://' + cleaned;
+  }
+
   if (cleaned.startsWith('http://') || cleaned.startsWith('https://')) {
     try {
       const url = new URL(cleaned);
@@ -14,11 +20,14 @@ function extractGithubUsername(input: string): string | null {
         const parts = url.pathname.split('/').filter(Boolean);
         if (parts.length > 0) return parts[0];
       }
-    } catch {
+    } catch (e) {
+      console.error('Error parsing GitHub URL:', e);
       return null;
     }
   }
-  return cleaned.replace(/^@/, '');
+  
+  // Strip trailing slashes or query parameters if it was not caught by URL parser
+  return cleaned.replace(/^@/, '').split(/[?#/]/)[0];
 }
 
 export async function GET(req: Request) {
@@ -55,7 +64,7 @@ export async function GET(req: Request) {
             source: founder?.source || 'inbound',
             stage: app.status || 'sourced',
             founderScore: founder?.founderScore?.value ?? null,
-            trustScore: null, // Trust score calculation is downstream in diligence phase
+            trustScore: null,
           };
         })
       );
@@ -147,9 +156,15 @@ export async function POST(req: Request) {
 
     if (github && github.trim()) {
       githubUsername = extractGithubUsername(github);
+      console.log(`[GitHub Enrichment] Extracted username: "${githubUsername}" from input: "${github}"`);
+      
       if (githubUsername) {
+        console.log(`[GitHub Enrichment] Triggering getUserProfile for: ${githubUsername}`);
         const profileResult = await getUserProfile(githubUsername);
+        
+        console.log(`[GitHub Enrichment] getUserProfile response ok: ${profileResult.ok}`);
         if (!profileResult.ok) {
+          console.error(`[GitHub Enrichment] getUserProfile failed: ${profileResult.message}`);
           return NextResponse.json({
             success: false,
             error: `GitHub lookup failed for @${githubUsername}: ${profileResult.message}`,
@@ -157,7 +172,10 @@ export async function POST(req: Request) {
         }
 
         const profile = profileResult.data;
+        console.log(`[GitHub Enrichment] Triggering getUserRepos for: ${githubUsername}`);
         const reposResult = await getUserRepos(githubUsername, 5);
+        
+        console.log(`[GitHub Enrichment] getUserRepos response ok: ${reposResult.ok}`);
         const topRepos = reposResult.ok ? reposResult.data : [];
 
         rawSignals = [
@@ -206,6 +224,7 @@ export async function POST(req: Request) {
         if (profile.name) {
           founderName = profile.name;
         }
+        console.log(`[GitHub Enrichment] Successfully enriched structuredProfile for @${githubUsername}`);
       }
     }
 
@@ -252,6 +271,7 @@ export async function POST(req: Request) {
       message: 'Application submitted',
     });
   } catch (error: any) {
+    console.error('[Application Submission Error]', error);
     return NextResponse.json(
       { success: false, error: error.message },
       { status: 500 }

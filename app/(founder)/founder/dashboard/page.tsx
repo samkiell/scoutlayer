@@ -140,6 +140,59 @@ export default function FounderDashboard() {
               <PipelineStepper currentStage={currentStageIndex} />
             </div>
 
+            {/* GitHub Signals Card */}
+            {founder?.structuredProfile?.githubUrl && (
+              <div className="bg-surface border border-border rounded-2xl p-8 flex flex-col gap-6">
+                <div className="flex justify-between items-center">
+                  <h3 className="font-display text-lg font-bold text-text">GitHub Signals</h3>
+                  {founder.structuredProfile.coldStart && (
+                    <span className="text-[10px] font-data font-semibold bg-flag/15 text-flag px-2.5 py-1 rounded border border-flag/30 uppercase tracking-wider">
+                      Limited public signal
+                    </span>
+                  )}
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="bg-bg border border-border rounded-xl p-4">
+                    <span className="text-xs text-text-muted uppercase tracking-wider">Followers</span>
+                    <div className="font-data text-xl font-bold mt-1 text-text">
+                      {founder.structuredProfile.followers ?? 0}
+                    </div>
+                  </div>
+                  <div className="bg-bg border border-border rounded-xl p-4">
+                    <span className="text-xs text-text-muted uppercase tracking-wider">Public Repos</span>
+                    <div className="font-data text-xl font-bold mt-1 text-text">
+                      {founder.structuredProfile.publicRepos ?? 0}
+                    </div>
+                  </div>
+                </div>
+
+                {founder.structuredProfile.topRepos && founder.structuredProfile.topRepos.length > 0 && (
+                  <div className="flex flex-col gap-3">
+                    <span className="text-xs text-text-muted uppercase tracking-wider font-semibold">Top Repositories</span>
+                    <div className="grid gap-2">
+                      {founder.structuredProfile.topRepos.slice(0, 3).map((repo: any, idx: number) => (
+                        <div key={idx} className="flex justify-between items-center bg-bg/50 border border-border/50 rounded-xl px-4 py-3">
+                          <a
+                            href={repo.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-sm font-medium text-action hover:underline truncate max-w-[200px]"
+                          >
+                            {repo.name}
+                          </a>
+                          <div className="flex items-center gap-1 font-data text-xs text-text-muted">
+                            <span>⭐</span>
+                            <span>{repo.stars}</span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
             {/* Application Data (Read-only) */}
             <div className="bg-surface border border-border rounded-2xl p-8 flex flex-col gap-6">
               <h3 className="font-display text-lg font-bold text-text">Submitted Details</h3>
