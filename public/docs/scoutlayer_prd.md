@@ -92,7 +92,38 @@ scoring path — not silently deprioritized.
 - **Web verification:** Tavily
 - **Hosting:** Vercel
 
-## 6. Data Model (high-level)
+## 6. Design Tokens — "Terminal Ledger"
+
+Direction: evidence/trust system, not a generic SaaS dashboard. "Notion-level approachability,
+Bloomberg-level analytical depth" (per brief). Signature motif: every claim needs a receipt.
+
+**Color** (functional, not decorative — each color means one thing, used only for that):
+- `--bg`: `#0D1117` — ink navy background (not pure black)
+- `--text`: `#EDEFF3` — primary text, warm off-white
+- `--surface`: `#1C2333` — card/surface, one step up from background
+- `--trust`: `#2FA88B` — verified/confirmed evidence only
+- `--flag`: `#D98E3B` — uncertain/low-confidence/gaps only
+- `--action`: `#4C7EFF` — buttons, links, primary CTAs
+
+**Type** (three roles):
+- Display: **Space Grotesk** — headlines
+- Body: **Inter** — everything readable
+- Data/utility: **IBM Plex Mono** — scores, confidence %, citations, timestamps (signature choice — makes evidence look verifiable, not decorative)
+
+**Layout:**
+- Founder-facing (apply flow): calm, generous whitespace, Notion-like
+- Investor-facing (dashboards, screening): dense data-grid, Bloomberg-like
+- Pipeline stepper (Sourcing → Screening → Diligence → Decision) is a genuine sequence, numbered stepper is earned here, not decorative
+
+**Signature element — "Evidence Receipt":**
+A stub-styled component (perforated edge, monospace type) showing claim → source → confidence.
+Used everywhere a Trust Score appears. This is the one memorable visual element; everything else
+stays quiet and disciplined around it.
+
+**Explicitly avoid:** cream background + serif + terracotta; near-black + single neon accent;
+broadsheet/newspaper hairline-rule layout. These are generic AI-design defaults, not this brief.
+
+## 7. Data Model (high-level)
 
 **`users`** — `{ _id, email, role: 'founder' | 'investor', name, createdAt }`
 
@@ -108,7 +139,7 @@ scoring path — not silently deprioritized.
 
 **`pipelineRuns`** — `{ _id, applicationId, stage, status: 'pending'|'running'|'done'|'error', log: [...] }` (drives SSE progress)
 
-## 7. Route Map
+## 8. Route Map
 
 ### Founder
 - `/founder/apply` — application form (deck upload, company info)
@@ -133,7 +164,7 @@ scoring path — not silently deprioritized.
 - `POST /api/memo/[applicationId]` — generate memo
 - `POST /api/query` — natural-language → structured filter
 
-## 8. Agent Architecture
+## 9. Agent Architecture
 
 - **Planner** — orchestrates pipeline stage sequencing per application
 - **Specialist (Sourcing)** — ingests raw signals from chosen channel, structures into `founders.structuredProfile`
@@ -141,7 +172,7 @@ scoring path — not silently deprioritized.
 - **Verifier (Diligence)** — Tavily-backed claim checking, produces Trust Score
 - **Synthesizer (Decision)** — compiles memo from all prior stage outputs, flags gaps
 
-## 9. Judging Alignment
+## 10. Judging Alignment
 
 | Criterion | Weight | What we're building for it |
 |---|---|---|
@@ -150,7 +181,7 @@ scoring path — not silently deprioritized.
 | Investment Utility & Execution | 30% | End-to-end working pipeline, real 24hr-actionable memo |
 | UX & Design | 15% | Clean investor dashboard, shadcn, no unnecessary complexity |
 
-## 10. Open Risks
+## 11. Open Risks
 
 - Solo build, full 4-stage depth — cut list above exists for this reason
 - Vercel timeout risk on long agent chains — mitigated via SSE + status polling
