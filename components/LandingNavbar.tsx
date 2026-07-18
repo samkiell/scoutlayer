@@ -17,12 +17,12 @@ export default function LandingNavbar() {
 
         {/* Right: Desktop links */}
         <div className="hidden md:flex items-center gap-6">
-          <a href="#founders" className="text-sm text-text-muted hover:text-text transition-colors">
+          <Link href="/login?intent=founder" className="text-sm text-text-muted hover:text-text transition-colors">
             For Founders
-          </a>
-          <a href="#investors" className="text-sm text-text-muted hover:text-text transition-colors">
+          </Link>
+          <Link href="/login?intent=investor" className="text-sm text-text-muted hover:text-text transition-colors">
             For Investors
-          </a>
+          </Link>
           <Link
             href="/login"
             className="px-4 py-2 bg-action hover:bg-action/90 text-white text-sm font-medium rounded-lg transition-colors"
@@ -44,20 +44,20 @@ export default function LandingNavbar() {
       {/* Mobile panel */}
       {mobileOpen && (
         <div className="md:hidden bg-surface border-t border-border px-6 py-4 flex flex-col gap-3">
-          <a
-            href="#founders"
+          <Link
+            href="/login?intent=founder"
             onClick={() => setMobileOpen(false)}
             className="text-sm text-text-muted hover:text-text transition-colors py-2"
           >
             For Founders
-          </a>
-          <a
-            href="#investors"
+          </Link>
+          <Link
+            href="/login?intent=investor"
             onClick={() => setMobileOpen(false)}
             className="text-sm text-text-muted hover:text-text transition-colors py-2"
           >
             For Investors
-          </a>
+          </Link>
           <Link
             href="/login"
             onClick={() => setMobileOpen(false)}

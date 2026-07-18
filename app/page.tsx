@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useEffect } from 'react';
-import { useSession, signIn } from 'next-auth/react';
+import Link from 'next/link';
+import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { ArrowRight } from 'lucide-react';
 import EvidenceReceipt from '@/components/EvidenceReceipt';
@@ -70,13 +71,13 @@ export default function Home() {
             ScoutLayer runs AI screening and claim verification on every founder application.
             Every score traces back to a real source. No black boxes.
           </p>
-          <button
-            onClick={() => signIn('google')}
+          <Link
+            href="/login"
             className="inline-flex items-center gap-2 px-6 py-3 bg-action hover:bg-action/90 text-white font-medium rounded-lg text-sm transition-colors group"
           >
             Get Started
             <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
-          </button>
+          </Link>
         </section>
 
         {/* 1. How It Works Section */}
@@ -133,12 +134,12 @@ export default function Home() {
                 Apply once. Get seen on evidence, not who you know. Track your active verifications and claim receipts.
               </p>
             </div>
-            <button
-              onClick={() => signIn('google')}
+            <Link
+              href="/login?intent=founder"
               className="px-5 py-2.5 bg-action hover:bg-action/90 text-white text-sm font-medium rounded-lg transition-colors"
             >
               Apply as a Founder
-            </button>
+            </Link>
           </div>
 
           {/* Investors Card */}
@@ -149,12 +150,12 @@ export default function Home() {
                 Source and screen founders before the rest of the market sees them. Access detailed memos and verified signals.
               </p>
             </div>
-            <button
-              onClick={() => signIn('google')}
+            <Link
+              href="/login?intent=investor"
               className="px-5 py-2.5 bg-action hover:bg-action/90 text-white text-sm font-medium rounded-lg transition-colors"
             >
               Sign in as an Investor
-            </button>
+            </Link>
           </div>
         </section>
 
@@ -164,12 +165,12 @@ export default function Home() {
           <p className="text-text-muted text-sm leading-relaxed font-body">
             Get started by logging in and configuring your role. Start screening or verifying claims instantly.
           </p>
-          <button
-            onClick={() => signIn('google')}
+          <Link
+            href="/login"
             className="px-6 py-3 bg-action hover:bg-action/90 text-white font-medium rounded-lg text-sm transition-colors"
           >
             Enter Platform
-          </button>
+          </Link>
         </section>
       </main>
 
