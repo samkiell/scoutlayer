@@ -3,7 +3,8 @@
 import React, { useEffect } from 'react';
 import { useSession, signIn } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
-import { Brain, ArrowRight, Shield, Target, Award } from 'lucide-react';
+import { ArrowRight, Target, Award, Shield } from 'lucide-react';
+import EvidenceReceipt from '@/components/EvidenceReceipt';
 
 export default function Home() {
   const { data: session, status } = useSession();
@@ -24,40 +25,36 @@ export default function Home() {
 
   if (status === 'loading') {
     return (
-      <div className="flex-1 flex flex-col items-center justify-center bg-zinc-950 text-zinc-100">
-        <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-indigo-500"></div>
+      <div className="flex-1 flex flex-col items-center justify-center bg-bg text-text">
+        <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-action"></div>
       </div>
     );
   }
 
   return (
-    <div className="flex-1 flex flex-col bg-zinc-950 text-zinc-100 selection:bg-indigo-500/30">
-      {/* Background gradients */}
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,rgba(99,102,241,0.08),transparent_50%),radial-gradient(ellipse_at_bottom_left,rgba(168,85,247,0.05),transparent_50%)] pointer-events-none" />
-
+    <div className="flex-1 flex flex-col bg-bg text-text">
       {/* Hero section */}
-      <main className="flex-1 max-w-5xl mx-auto px-6 flex flex-col items-center justify-center text-center relative z-10 py-20">
-        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-zinc-900 border border-zinc-800 text-xs font-semibold text-zinc-400 mb-8 animate-fade-in shadow-inner">
-          <span className="flex h-2 w-2 rounded-full bg-indigo-500 animate-pulse"></span>
-          Maschmeyer Group challenge 02
+      <main className="flex-1 max-w-5xl mx-auto px-6 flex flex-col items-center justify-center text-center py-24">
+        <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-surface border border-border text-xs font-medium text-text-muted mb-10">
+          <span className="flex h-2 w-2 rounded-full bg-action animate-pulse"></span>
+          Maschmeyer Group · Challenge 02
         </div>
 
-        <div className="bg-gradient-to-tr from-violet-600 to-indigo-500 p-4 rounded-3xl shadow-xl shadow-indigo-500/20 mb-8">
-          <Brain className="h-12 w-12 text-white" />
-        </div>
-
-        <h1 className="text-5xl sm:text-7xl font-extrabold tracking-tight mb-6 bg-gradient-to-b from-zinc-100 to-zinc-400 bg-clip-text text-transparent">
-          Evidence-Backed Venture Sourcing
+        <h1 className="font-display text-5xl sm:text-7xl font-bold tracking-tight mb-6 text-text">
+          Evidence-Backed
+          <br />
+          Venture Sourcing
         </h1>
 
-        <p className="text-lg sm:text-xl text-zinc-400 max-w-2xl mb-10 leading-relaxed">
-          ScoutLayer is an AI-first venture sourcing and screening platform. Surface exceptional founders on verifiable evidence, not network access.
+        <p className="text-lg sm:text-xl text-text-muted max-w-2xl mb-10 leading-relaxed">
+          ScoutLayer is an AI-first venture sourcing and screening platform.
+          Surface exceptional founders on verifiable evidence, not network access.
         </p>
 
-        <div className="flex flex-col sm:flex-row gap-4 mb-16">
+        <div className="flex flex-col sm:flex-row gap-4 mb-20">
           <button
             onClick={() => signIn('google')}
-            className="flex items-center justify-center gap-2 px-8 py-4 bg-indigo-600 hover:bg-indigo-500 text-white font-semibold rounded-xl text-md transition-all shadow-lg shadow-indigo-600/25 group"
+            className="flex items-center justify-center gap-2 px-8 py-4 bg-action hover:bg-action/90 text-white font-semibold rounded-xl text-md transition-all group"
           >
             Enter Platform
             <ArrowRight className="h-5 w-5 transition-transform group-hover:translate-x-1" />
@@ -65,30 +62,42 @@ export default function Home() {
         </div>
 
         {/* Feature Highlights */}
-        <div className="grid sm:grid-cols-3 gap-8 w-full border-t border-zinc-900 pt-16">
-          <div className="flex flex-col items-center p-4 bg-zinc-900/30 border border-zinc-900 rounded-2xl">
-            <div className="p-3 bg-indigo-500/10 rounded-xl mb-4 text-indigo-400">
+        <div className="grid sm:grid-cols-3 gap-6 w-full border-t border-border pt-16">
+          <div className="flex flex-col items-center p-6 bg-surface border border-border rounded-xl">
+            <div className="p-3 bg-action/10 rounded-xl mb-4 text-action">
               <Target className="h-6 w-6" />
             </div>
-            <h3 className="font-semibold text-lg mb-2 text-zinc-200">Outbound Sourcing</h3>
-            <p className="text-sm text-zinc-500">Scan developer channels like GitHub to discover elite technical talent early.</p>
+            <h3 className="font-display font-semibold text-lg mb-2 text-text">Outbound Sourcing</h3>
+            <p className="text-sm text-text-muted">Scan developer channels like GitHub to discover elite technical talent early.</p>
           </div>
 
-          <div className="flex flex-col items-center p-4 bg-zinc-900/30 border border-zinc-900 rounded-2xl">
-            <div className="p-3 bg-violet-500/10 rounded-xl mb-4 text-violet-400">
+          <div className="flex flex-col items-center p-6 bg-surface border border-border rounded-xl">
+            <div className="p-3 bg-action/10 rounded-xl mb-4 text-action">
               <Award className="h-6 w-6" />
             </div>
-            <h3 className="font-semibold text-lg mb-2 text-zinc-200">3-Axis Screening</h3>
-            <p className="text-sm text-zinc-500">AI analysis of Founder, Market, and Idea VS Market trends without averaging.</p>
+            <h3 className="font-display font-semibold text-lg mb-2 text-text">3-Axis Screening</h3>
+            <p className="text-sm text-text-muted">AI analysis of Founder, Market, and Idea VS Market trends without averaging.</p>
           </div>
 
-          <div className="flex flex-col items-center p-4 bg-zinc-900/30 border border-zinc-900 rounded-2xl">
-            <div className="p-3 bg-emerald-500/10 rounded-xl mb-4 text-emerald-400">
+          <div className="flex flex-col items-center p-6 bg-surface border border-border rounded-xl">
+            <div className="p-3 bg-trust/10 rounded-xl mb-4 text-trust">
               <Shield className="h-6 w-6" />
             </div>
-            <h3 className="font-semibold text-lg mb-2 text-zinc-200">Trust claim verification</h3>
-            <p className="text-sm text-zinc-500">Tavily-backed claim checker generates real trust scores with full citations.</p>
+            <h3 className="font-display font-semibold text-lg mb-2 text-text">Trust Verification</h3>
+            <p className="text-sm text-text-muted">Tavily-backed claim checker generates real trust scores with full citations.</p>
           </div>
+        </div>
+
+        {/* Evidence Receipt Preview */}
+        <div className="mt-16 flex flex-col items-center">
+          <h2 className="font-display text-lg font-semibold text-text-muted mb-6">Every claim needs a receipt</h2>
+          <EvidenceReceipt
+            claim="Previously raised $1M seed round from Y Combinator"
+            source="https://techcrunch.com/2024/03/innovate-ai-seed"
+            confidence={92}
+            verifiedBy="tavily"
+            timestamp="2024-03-15 14:32 UTC"
+          />
         </div>
       </main>
     </div>
