@@ -3,25 +3,22 @@
 
 import React from 'react';
 import { signIn } from 'next-auth/react';
-import { Brain } from 'lucide-react';
 
 export default function Login() {
   return (
-    <div className="flex-1 flex flex-col items-center justify-center bg-zinc-950 px-4 text-zinc-100">
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(99,102,241,0.05),transparent_60%)] pointer-events-none" />
-
-      <div className="w-full max-w-md bg-zinc-900/60 border border-zinc-800 rounded-3xl p-8 shadow-2xl backdrop-blur-xl relative z-10">
+    <div className="flex-1 flex flex-col items-center justify-center bg-bg px-4 text-text">
+      <div className="w-full max-w-md bg-surface border border-border rounded-2xl p-8 shadow-xl">
         <div className="flex flex-col items-center text-center mb-8">
-          <div className="bg-gradient-to-tr from-violet-600 to-indigo-500 p-3 rounded-2xl shadow-lg shadow-indigo-500/20 mb-4">
-            <Brain className="h-8 w-8 text-white" />
+          <div className="bg-action w-12 h-12 rounded-xl flex items-center justify-center mb-4">
+            <span className="text-white font-display font-bold text-lg">SL</span>
           </div>
-          <h2 className="text-2xl font-bold tracking-tight text-zinc-100">Welcome to ScoutLayer</h2>
-          <p className="text-zinc-500 text-sm mt-2">Sign in to access your dashboard</p>
+          <h2 className="font-display text-2xl font-bold tracking-tight text-text">Welcome to ScoutLayer</h2>
+          <p className="text-text-muted text-sm mt-2">Sign in to access your dashboard</p>
         </div>
 
         <button
           onClick={() => signIn('google', { callbackUrl: '/' })}
-          className="w-full flex items-center justify-center gap-3 px-5 py-3.5 bg-zinc-100 hover:bg-zinc-200 text-zinc-900 font-semibold rounded-xl text-sm transition-all shadow-md shadow-zinc-100/5 hover:scale-[1.01]"
+          className="w-full flex items-center justify-center gap-3 px-5 py-3.5 bg-white hover:bg-gray-100 text-gray-900 font-semibold rounded-xl text-sm transition-all"
         >
           <svg className="h-5 w-5" viewBox="0 0 24 24">
             <path
@@ -44,7 +41,7 @@ export default function Login() {
           Continue with Google
         </button>
 
-        <div className="mt-8 text-center text-xs text-zinc-600">
+        <div className="mt-8 text-center text-xs text-text-muted">
           By signing in, you agree to our Terms of Service and Privacy Policy.
         </div>
       </div>

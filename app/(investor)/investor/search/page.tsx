@@ -40,23 +40,23 @@ export default function SearchPage() {
   };
 
   return (
-    <div className="flex-1 flex flex-col bg-zinc-950 text-zinc-100 min-h-screen">
+    <div className="flex-1 flex flex-col bg-bg text-text min-h-screen">
       <Navbar />
 
       <main className="flex-1 max-w-4xl w-full mx-auto px-6 py-12 flex flex-col gap-8">
         <div>
           <button
             onClick={() => router.back()}
-            className="flex items-center gap-2 text-sm text-zinc-500 hover:text-zinc-300 transition-colors mb-6"
+            className="flex items-center gap-2 text-sm text-text-muted hover:text-text transition-colors mb-6"
           >
             <ArrowLeft className="h-4 w-4" />
             Back
           </button>
-          <h1 className="text-3xl font-extrabold tracking-tight flex items-center gap-2">
-            Natural Language Search <Sparkles className="h-6 w-6 text-indigo-400" />
+          <h1 className="font-display text-3xl font-bold tracking-tight flex items-center gap-2">
+            Natural Language Search <Sparkles className="h-6 w-6 text-action" />
           </h1>
-          <p className="text-zinc-400 text-sm mt-1">
-            Query across sourced founders and applications using plain English. E.g. "technical founder in Berlin with AI background".
+          <p className="text-text-muted text-sm mt-1">
+            Query across sourced founders and applications using plain English. E.g. &quot;technical founder in Berlin with AI background&quot;.
           </p>
         </div>
 
@@ -67,12 +67,12 @@ export default function SearchPage() {
             placeholder="Search founders by concept, skills, location..."
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            className="flex-1 bg-zinc-900/60 border border-zinc-800 rounded-2xl px-6 py-4 text-sm text-zinc-100 focus:outline-none focus:border-indigo-500 transition-colors"
+            className="flex-1 bg-surface border border-border rounded-xl px-6 py-4 text-sm text-text transition-colors"
           />
           <button
             type="submit"
             disabled={loading}
-            className="flex items-center gap-2 px-6 py-4 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white font-semibold rounded-2xl text-sm transition-all"
+            className="flex items-center gap-2 px-6 py-4 bg-action hover:bg-action/90 disabled:opacity-50 text-white font-semibold rounded-xl text-sm transition-all"
           >
             <Search className="h-4 w-4" />
             {loading ? 'Searching...' : 'Search'}
@@ -80,12 +80,12 @@ export default function SearchPage() {
         </form>
 
         {results && (
-          <div className="mt-8 p-6 bg-zinc-900/40 border border-zinc-800 rounded-3xl">
-            <h2 className="text-lg font-bold mb-4">Query Translation Result (Stub)</h2>
-            <pre className="text-xs text-indigo-400 bg-zinc-950 p-4 rounded-xl overflow-x-auto">
+          <div className="mt-4 p-6 bg-surface border border-border rounded-xl">
+            <h2 className="font-display text-lg font-bold mb-4">Query Translation Result (Stub)</h2>
+            <pre className="font-data text-xs text-action bg-bg p-4 rounded-lg overflow-x-auto">
               {JSON.stringify(results.filters, null, 2)}
             </pre>
-            <p className="text-sm text-zinc-400 mt-4">
+            <p className="text-sm text-text-muted mt-4">
               Found 0 founders matching this parsed filter structure.
             </p>
           </div>
