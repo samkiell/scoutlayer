@@ -1,26 +1,97 @@
 @import "tailwindcss";
 
+/* ─── Terminal Ledger Design Tokens ─── */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --bg: #0D1117;
+  --text: #EDEFF3;
+  --surface: #1C2333;
+  --trust: #2FA88B;
+  --flag: #D98E3B;
+  --action: #4C7EFF;
+
+  /* Derived tokens */
+  --text-muted: #8B92A5;
+  --border: #2A3045;
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
+  --color-bg: var(--bg);
+  --color-text: var(--text);
+  --color-text-muted: var(--text-muted);
+  --color-surface: var(--surface);
+  --color-trust: var(--trust);
+  --color-flag: var(--flag);
+  --color-action: var(--action);
+  --color-border: var(--border);
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --font-display: var(--font-space-grotesk);
+  --font-body: var(--font-inter);
+  --font-data: var(--font-ibm-plex-mono);
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-body), system-ui, sans-serif;
+}
+
+/* ─── Typography utility classes ─── */
+.font-display {
+  font-family: var(--font-display), system-ui, sans-serif;
+}
+
+.font-body {
+  font-family: var(--font-body), system-ui, sans-serif;
+}
+
+.font-data {
+  font-family: var(--font-data), monospace;
+}
+
+/* ─── Evidence Receipt — perforated edge ─── */
+.receipt-edge-top {
+  background-image: radial-gradient(circle at 8px 0, transparent 8px, var(--surface) 8px);
+  background-size: 16px 16px;
+  background-position: -8px -8px;
+  background-repeat: repeat-x;
+  height: 8px;
+}
+
+.receipt-edge-bottom {
+  background-image: radial-gradient(circle at 8px 8px, transparent 8px, var(--surface) 8px);
+  background-size: 16px 16px;
+  background-position: -8px 0;
+  background-repeat: repeat-x;
+  height: 8px;
+}
+
+/* ─── Form focus ring ─── */
+input:focus,
+textarea:focus,
+select:focus {
+  outline: none;
+  border-color: var(--action);
+}
+
+/* ─── Scrollbar (subtle) ─── */
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--bg);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--text-muted);
+}
+
+/* ─── Selection ─── */
+::selection {
+  background: rgba(76, 126, 255, 0.25);
 }
