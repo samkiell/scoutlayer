@@ -2,6 +2,8 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
+import LandingNavbar from '@/components/LandingNavbar';
+import Footer from '@/components/Footer';
 
 interface AccordionItemProps {
   question: string;
@@ -30,11 +32,15 @@ function AccordionItem({ question, answer }: AccordionItemProps) {
       </button>
       {isOpen && (
         <div className="px-6 pb-4 pt-1 border-t border-border/50 text-sm text-text-muted leading-relaxed font-body">
-          {answer}
+          {itemContent(answer)}
         </div>
       )}
     </div>
   );
+}
+
+function itemContent(text: string) {
+  return text;
 }
 
 export default function FAQs() {
@@ -74,10 +80,12 @@ export default function FAQs() {
   ];
 
   return (
-    <div className="min-h-screen bg-bg text-text">
-      <div className="max-w-2xl mx-auto px-6 py-16">
+    <div className="min-h-screen bg-bg text-text flex flex-col justify-between">
+      <LandingNavbar />
+      
+      <main className="flex-1 max-w-2xl w-full mx-auto px-6 py-16">
         <Link href="/" className="text-sm text-text-muted hover:text-action transition-colors mb-8 inline-block">
-          ← Back
+          ← Back to home
         </Link>
 
         <div className="mb-10">
@@ -90,7 +98,9 @@ export default function FAQs() {
             <AccordionItem key={idx} question={item.question} answer={item.answer} />
           ))}
         </div>
-      </div>
+      </main>
+
+      <Footer />
     </div>
   );
 }

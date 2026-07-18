@@ -1,5 +1,7 @@
 import React from 'react';
 import Link from 'next/link';
+import LandingNavbar from '@/components/LandingNavbar';
+import Footer from '@/components/Footer';
 
 export const metadata = {
   title: 'Privacy Policy — ScoutLayer',
@@ -7,10 +9,12 @@ export const metadata = {
 
 export default function Privacy() {
   return (
-    <div className="min-h-screen bg-bg text-text">
-      <article className="max-w-2xl mx-auto px-6 py-16">
+    <div className="min-h-screen bg-bg text-text flex flex-col justify-between">
+      <LandingNavbar />
+      
+      <main className="flex-1 max-w-2xl w-full mx-auto px-6 py-16">
         <Link href="/" className="text-sm text-text-muted hover:text-action transition-colors mb-8 inline-block">
-          ← Back
+          ← Back to home
         </Link>
 
         <h1 className="font-display text-3xl font-bold tracking-tight mb-2">Privacy Policy</h1>
@@ -81,7 +85,9 @@ export default function Privacy() {
             </p>
           </section>
         </div>
-      </article>
+      </main>
+
+      <Footer />
     </div>
   );
 }

@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import Link from 'next/link';
 import { signIn } from 'next-auth/react';
 import { Menu, X } from 'lucide-react';
 
@@ -23,12 +24,12 @@ export default function LandingNavbar() {
           <a href="#investors" className="text-sm text-text-muted hover:text-text transition-colors">
             For Investors
           </a>
-          <button
-            onClick={() => signIn('google')}
+          <Link
+            href="/login"
             className="px-4 py-2 bg-action hover:bg-action/90 text-white text-sm font-medium rounded-lg transition-colors"
           >
             Sign In
-          </button>
+          </Link>
         </div>
 
         {/* Right: Mobile hamburger */}
@@ -58,12 +59,13 @@ export default function LandingNavbar() {
           >
             For Investors
           </a>
-          <button
-            onClick={() => signIn('google')}
-            className="w-full px-4 py-2.5 bg-action hover:bg-action/90 text-white text-sm font-medium rounded-lg transition-colors mt-1"
+          <Link
+            href="/login"
+            onClick={() => setMobileOpen(false)}
+            className="w-full text-center px-4 py-2.5 bg-action hover:bg-action/90 text-white text-sm font-medium rounded-lg transition-colors mt-1"
           >
             Sign In
-          </button>
+          </Link>
         </div>
       )}
     </nav>
