@@ -6,6 +6,12 @@ export default withAuth(
     const token = req.nextauth.token;
     const pathname = req.nextUrl.pathname;
 
+    // If user already has a role and lands on /role-select, send them to their dashboard
+    if (token?.role && pathname === '/role-select') {
+      const dest = token.role === 'founder' ? '/founder/dashboard' : '/investor/dashboard';
+      return NextResponse.redirect(new URL(dest, req.url));
+    }
+
     // Check if the user is authenticated but hasn't selected a role yet
     if (token && !token.role && pathname !== '/role-select') {
       return NextResponse.redirect(new URL('/role-select', req.url));
