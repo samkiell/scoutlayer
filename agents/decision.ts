@@ -161,7 +161,8 @@ export async function* runDecisionAgent(
   }
 
   // ── Pipeline run (find or create) ────────────────────────────────────────────
-  let runDoc = await pipelineRunsCol.findOne({ applicationId, stage: 'decision' });
+  let runDoc: { _id: import('mongodb').ObjectId; applicationId: string; founderId: string } | null =
+    (await pipelineRunsCol.findOne({ applicationId, stage: 'decision' })) as any;
   if (!runDoc) {
     const inserted = await pipelineRunsCol.insertOne({
       applicationId,
@@ -172,7 +173,7 @@ export async function* runDecisionAgent(
       createdAt: new Date(),
       updatedAt: new Date(),
     });
-    runDoc = { ...inserted, _id: inserted.insertedId } as any;
+    runDoc = { _id: inserted.insertedId, applicationId, founderId: application.founderId };
   } else {
     await pipelineRunsCol.updateOne(
       { _id: runDoc._id },

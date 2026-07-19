@@ -107,7 +107,11 @@ export async function GET(
         })),
         memo: memo ? {
           companySnapshot: memo.companySnapshot,
+          investmentHypotheses: memo.investmentHypotheses,
           swot: memo.swot,
+          problemProduct: memo.problemProduct,
+          tractionKpis: memo.tractionKpis,
+          gapsFlagged: memo.gapsFlagged,
         } : null,
       },
     });

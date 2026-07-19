@@ -567,24 +567,70 @@ export default function FounderProfile() {
         {memo && (
           <section className="flex flex-col gap-3">
             <h2 className="font-display text-lg font-bold tracking-tight">Investment Memo</h2>
-            <div className="bg-surface border border-border rounded-xl p-6 flex flex-col gap-5">
+            <div className="bg-surface border border-border rounded-xl p-6 md:p-8 flex flex-col gap-7">
+              {/* Company snapshot */}
               <div>
-                <h3 className="font-display font-semibold text-text mb-2">Company Snapshot</h3>
-                <p className="text-sm text-text-muted leading-relaxed">{memo.companySnapshot}</p>
+                <h3 className="font-display font-semibold text-text mb-2 text-sm uppercase tracking-wider">Company Snapshot</h3>
+                <p className="text-[15px] text-text-muted leading-relaxed font-body">{memo.companySnapshot}</p>
               </div>
-              
+
+              {/* Investment hypotheses */}
+              {memo.investmentHypotheses && (
+                <div>
+                  <h3 className="font-display font-semibold text-text mb-2 text-sm uppercase tracking-wider">Investment Hypotheses</h3>
+                  <div className="text-[15px] text-text-muted leading-relaxed font-body whitespace-pre-line">
+                    {memo.investmentHypotheses}
+                  </div>
+                </div>
+              )}
+
+              {/* SWOT */}
               {memo.swot && (
-                <div className="grid sm:grid-cols-2 gap-4 mt-2">
-                  {Object.entries(memo.swot).map(([key, list]: any) => (
-                    <div key={key} className="bg-bg p-5 rounded-xl border border-border">
-                      <h4 className="font-display font-semibold text-text mb-3 text-sm capitalize">{key}</h4>
-                      <ul className="text-sm text-text-muted list-disc list-inside flex flex-col gap-1.5">
-                        {list.map((item: string, i: number) => (
-                          <li key={i}>{item}</li>
-                        ))}
-                      </ul>
-                    </div>
-                  ))}
+                <div>
+                  <h3 className="font-display font-semibold text-text mb-3 text-sm uppercase tracking-wider">SWOT</h3>
+                  <div className="grid sm:grid-cols-2 gap-4">
+                    {Object.entries(memo.swot).map(([key, list]: any) => (
+                      <div key={key} className="bg-bg p-5 rounded-xl border border-border">
+                        <h4 className="font-display font-semibold text-text mb-3 text-sm capitalize">{key}</h4>
+                        <ul className="text-sm text-text-muted list-disc list-inside flex flex-col gap-1.5">
+                          {list.map((item: string, i: number) => (
+                            <li key={i}>{item}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Problem & product */}
+              {memo.problemProduct && (
+                <div>
+                  <h3 className="font-display font-semibold text-text mb-2 text-sm uppercase tracking-wider">Problem &amp; Product</h3>
+                  <p className="text-[15px] text-text-muted leading-relaxed font-body">{memo.problemProduct}</p>
+                </div>
+              )}
+
+              {/* Traction & KPIs */}
+              {memo.tractionKpis && (
+                <div>
+                  <h3 className="font-display font-semibold text-text mb-2 text-sm uppercase tracking-wider">Traction &amp; KPIs</h3>
+                  <p className="text-[15px] text-text-muted leading-relaxed font-body">{memo.tractionKpis}</p>
+                </div>
+              )}
+
+              {/* Gaps flagged */}
+              {memo.gapsFlagged && memo.gapsFlagged.length > 0 && (
+                <div className="border-t border-border/60 pt-5">
+                  <h3 className="font-display font-semibold text-flag mb-2 text-sm uppercase tracking-wider flex items-center gap-2">
+                    <ShieldAlert className="h-4 w-4" />
+                    Gaps Flagged
+                  </h3>
+                  <ul className="text-sm text-text-muted list-disc list-inside flex flex-col gap-1.5">
+                    {memo.gapsFlagged.map((g: string, i: number) => (
+                      <li key={i}>{g}</li>
+                    ))}
+                  </ul>
                 </div>
               )}
             </div>
