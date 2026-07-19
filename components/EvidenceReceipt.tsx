@@ -48,7 +48,18 @@ export default function EvidenceReceipt({
         {/* Source */}
         <div className="mb-3">
           <span className="text-text-muted text-xs block mb-1">SOURCE</span>
-          <p className="text-action text-xs break-all">{source}</p>
+          {source && (source.startsWith('http://') || source.startsWith('https://')) ? (
+            <a
+              href={source}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-action text-xs break-all hover:underline"
+            >
+              {source}
+            </a>
+          ) : (
+            <p className="text-action text-xs break-all">{source || 'N/A'}</p>
+          )}
         </div>
 
         {/* Divider — dashed */}

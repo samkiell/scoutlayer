@@ -21,14 +21,6 @@ try {
   console.error('Error loading .env manually:', e);
 }
 
-import clientPromise from '../lib/db';
-import { ObjectId } from 'mongodb';
-import { runScreeningAgent } from '../agents/screening';
-import { runDiligenceAgent } from '../agents/diligence';
-import { runDecisionAgent } from '../agents/decision';
-import { translateNLQuery } from '../lib/query/queryTranslator';
-import { getUserProfile, getUserRepos } from '../lib/sources/github';
-
 // Helper to fully consume an async generator and print its events
 async function consumeAgent(generator: AsyncGenerator<any, any, any>, agentName: string) {
   console.log(`\n--- Starting ${agentName} ---`);
@@ -47,6 +39,13 @@ async function consumeAgent(generator: AsyncGenerator<any, any, any>, agentName:
 }
 
 async function runTests() {
+  const { default: clientPromise } = await import('../lib/db');
+  const { ObjectId } = await import('mongodb');
+  const { runScreeningAgent } = await import('../agents/screening');
+  const { runDiligenceAgent } = await import('../agents/diligence');
+  const { runDecisionAgent } = await import('../agents/decision');
+  const { translateNLQuery } = await import('../lib/query/queryTranslator');
+  const { getUserProfile, getUserRepos } = await import('../lib/sources/github');
   const mongoClient = await clientPromise;
   const db = mongoClient.db();
 

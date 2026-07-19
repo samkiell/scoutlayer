@@ -30,6 +30,12 @@ import clientPromise from '@/lib/db';
 import { ObjectId } from 'mongodb';
 import { OpenAI } from 'openai';
 import type { Memo, StructuredProfile, TrustClaim } from '@/types';
+import {
+  truncateRepoDescription,
+  truncateDeckText,
+  truncateLongField,
+  checkTokenBudget,
+} from '@/lib/utils/truncation';
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
@@ -50,10 +56,20 @@ const client = new OpenAI({
   baseURL: 'https://api.groq.com/openai/v1',
 });
 
-// Primary model is gpt-oss-120b per PRD. Fallbacks defined for robustness.
-const MODELS = ['gpt-oss-120b', 'llama-3.3-70b-versatile'];
+// Primary model is openai/gpt-oss-120b per PRD.
+const MODELS = ['openai/gpt-oss-120b'];
 
-async function callGroqWithFallback(systemPrompt: string, userPrompt: string): Promise<string> {
+async function callGroqWithFallback(
+  systemPrompt: string,
+  userPrompt: string,
+  appendLog?: (message: string, level?: MongoLogLevel) => Promise<void>
+): Promise<string> {
+  const totalPromptText = systemPrompt + userPrompt;
+  const { tokens } = checkTokenBudget(totalPromptText);
+  if (tokens > 8000 && appendLog) {
+    await appendLog(`[Warning] Prompt size estimated at ${tokens} tokens, exceeding safe threshold of 8000.`, 'warn');
+  }
+
   let lastError: any = null;
   for (const model of MODELS) {
     try {
@@ -225,26 +241,49 @@ export async function* runDecisionAgent(
     const marketAxis = screening.marketAxis || {};
     const ideaAxis = screening.ideaVsMarketAxis || {};
 
-    const topRepos = (profile.topRepos || []).map((r: any) => ({
+    const rawTopRepos = profile.topRepos || [];
+    const sortedRepos = [...rawTopRepos].sort((a: any, b: any) => (b.stars || 0) - (a.stars || 0));
+    const top5Repos = sortedRepos.slice(0, 5).map((r: any) => ({
       name: r.name,
       stars: r.stars,
       language: r.language,
-      description: r.description,
+      description: truncateRepoDescription(r.description),
       url: r.url,
     }));
+
+    const deckText = truncateDeckText(
+      application.deckText ||
+      application.deckContent ||
+      application.deck_content ||
+      application.deck_text ||
+      application.companyInfo?.deckText ||
+      application.companyInfo?.deckContent
+    );
+
+    const truncatedBio = truncateLongField(profile.bio || profile.description);
+    const truncatedAdditionalContext = truncateLongField(
+      application.additionalContext ||
+      application.companyInfo?.additionalContext ||
+      application.context ||
+      application.companyInfo?.description
+    );
 
     const context = {
       founderName: founder?.name,
       company: founder?.company || application?.companyInfo?.name,
       oneLiner: profile.oneLiner,
-      description: profile.description,
+      description: truncatedBio,
       sectors: profile.sectors,
       location: profile.location,
       followers: safeNum(profile.followers),
       publicRepos: safeNum(profile.publicRepos),
       githubUrl: profile.githubUrl,
-      topRepos,
-      companyInfo: application?.companyInfo,
+      topRepos: top5Repos,
+      companyInfo: application?.companyInfo ? {
+        ...application.companyInfo,
+        description: truncatedAdditionalContext,
+        deckText: deckText || undefined,
+      } : undefined,
       screening: {
         founderAxis: {
           score: founderAxis.score,
@@ -302,7 +341,7 @@ Return STRICTLY a JSON object with exactly these keys (do not add other sections
     yield { type: 'memo_generating', message: 'Generating investment memo via Groq (gpt-oss-120b)...' };
     await appendLog('Generating memo via Groq');
 
-    const memoRaw = await callGroqWithFallback(systemPrompt, JSON.stringify(context, null, 2));
+    const memoRaw = await callGroqWithFallback(systemPrompt, JSON.stringify(context, null, 2), appendLog);
     const memoResult = JSON.parse(memoRaw);
 
     const memoDoc: Omit<Memo, '_id'> = {

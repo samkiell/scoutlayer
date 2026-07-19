@@ -1,4 +1,5 @@
 import { OpenAI } from 'openai';
+import { checkTokenBudget } from '../utils/truncation';
 
 const groqApiKey = process.env.GROQ_API_KEY || '';
 const client = new OpenAI({
@@ -6,9 +7,12 @@ const client = new OpenAI({
   baseURL: 'https://api.groq.com/openai/v1',
 });
 
-const MODELS = ['gpt-oss-120b', 'llama-3.3-70b-versatile'];
+const MODELS = ['openai/gpt-oss-20b'];
 
 async function callGroqWithFallback(systemPrompt: string, userPrompt: string): Promise<string> {
+  const totalPromptText = systemPrompt + userPrompt;
+  checkTokenBudget(totalPromptText);
+
   let lastError: any = null;
   for (const model of MODELS) {
     try {

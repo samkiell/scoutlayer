@@ -135,15 +135,44 @@ export async function* runScreeningAgent(
   const companyInfo = application.companyInfo || {};
   const deckUrl: string | undefined = application.deck;
 
+  // Truncate fields to protect the token budget
+  const rawTopRepos = profile.topRepos || [];
+  const sortedRepos = [...rawTopRepos].sort((a: any, b: any) => (b.stars || 0) - (a.stars || 0));
+  const top5Repos = sortedRepos.slice(0, 5).map((r: any) => ({
+    name: r.name,
+    stars: r.stars,
+    language: r.language,
+    description: truncateRepoDescription(r.description),
+    url: r.url,
+  }));
+
+  const deckText = truncateDeckText(
+    application.deckText ||
+    application.deckContent ||
+    application.deck_content ||
+    application.deck_text ||
+    companyInfo.deckText ||
+    companyInfo.deckContent
+  );
+
+  const truncatedBio = truncateLongField(profile.bio || profile.description);
+  const truncatedAdditionalContext = truncateLongField(
+    application.additionalContext ||
+    companyInfo.additionalContext ||
+    application.context ||
+    companyInfo.description
+  );
+
   const contextPayload = JSON.stringify({
     // Application data (founder-submitted)
     application: {
       companyName: companyInfo.name || null,
       oneLinerPitch: companyInfo.oneLiner || null,
-      companyDescription: companyInfo.description || null,
+      companyDescription: truncatedAdditionalContext || null,
       deckUrl: deckUrl || null,
+      deckText: deckText || null,
       deckNote: deckUrl
-        ? 'A pitch deck link was provided but its contents have NOT been fetched or analyzed — only the URL is available.'
+        ? 'A pitch deck link was provided.'
         : 'No pitch deck was submitted.',
     },
     // GitHub / structured profile data
@@ -151,13 +180,13 @@ export async function* runScreeningAgent(
       name: founder.name,
       company: founder.company,
       oneLiner: profile.oneLiner,
-      description: profile.description,
+      description: truncatedBio,
       sectors: profile.sectors,
       location: profile.location,
       followers: profile.followers,
       publicRepos: profile.publicRepos,
       coldStart: profile.coldStart,
-      topRepos: profile.topRepos,
+      topRepos: top5Repos,
     },
   });
 
@@ -179,7 +208,7 @@ Provide your response strictly in the following JSON format:
   "rationale": "<one-line concise rationale explaining the score based on BOTH application and GitHub signals>"
 }`;
 
-    const founderResultRaw = await callGroqWithFallback(founderSystemPrompt, contextPayload);
+    const founderResultRaw = await callGroqWithFallback(founderSystemPrompt, contextPayload, appendLog);
     const founderResult = JSON.parse(founderResultRaw);
     const founderScore = Math.max(0, Math.min(100, Number(founderResult.score) || 0));
     const founderEvidence = founderResult.rationale || 'Limited founder signals available.';
@@ -209,7 +238,7 @@ Provide your response strictly in the following JSON format:
   "rationale": "<one-line concise rationale explaining the score, noting which data sources informed the assessment>"
 }`;
 
-    const marketResultRaw = await callGroqWithFallback(marketSystemPrompt, contextPayload);
+    const marketResultRaw = await callGroqWithFallback(marketSystemPrompt, contextPayload, appendLog);
     const marketResult = JSON.parse(marketResultRaw);
     const marketScore = Math.max(0, Math.min(100, Number(marketResult.score) || 0));
     const marketEvidence = marketResult.rationale || 'Lightweight signal proxy evaluation complete.';
@@ -239,7 +268,7 @@ Provide your response strictly in the following JSON format:
   "rationale": "<one-line concise rationale explaining the score and pivot potential, referencing the submitted pitch>"
 }`;
 
-    const ideaResultRaw = await callGroqWithFallback(ideaSystemPrompt, contextPayload);
+    const ideaResultRaw = await callGroqWithFallback(ideaSystemPrompt, contextPayload, appendLog);
     const ideaResult = JSON.parse(ideaResultRaw);
     const ideaScore = Math.max(0, Math.min(100, Number(ideaResult.score) || 0));
     const ideaEvidence = ideaResult.rationale || 'Evaluation of product-market thesis complete.';
