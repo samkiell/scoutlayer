@@ -6,7 +6,7 @@ import Navbar from '@/components/Navbar';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
-import { Compass, Shield, Search, ArrowUpRight, Activity, Loader2 } from 'lucide-react';
+import { Compass, Shield, Search, ArrowUpRight, Activity, Loader2, Github } from 'lucide-react';
 
 interface ApplicationItem {
   id: string;
@@ -144,13 +144,16 @@ export default function InvestorDashboard() {
                   </Link>
                 </div>
                 <div className="flex flex-wrap items-center gap-2 text-xs">
-                  <span className={`text-[10px] font-data px-2 py-1 rounded border uppercase tracking-wider ${
-                    app.source === 'inbound'
-                      ? 'bg-action/10 text-action border-action/20'
-                      : 'bg-trust/10 text-trust border-trust/20'
-                  }`}>
-                    source: {app.source}
-                  </span>
+                  {app.source === 'inbound' ? (
+                    <span className="text-[10px] font-data px-2 py-1 rounded border uppercase tracking-wider bg-action/10 text-action border-action/20">
+                      Inbound
+                    </span>
+                  ) : (
+                    <span className="text-[10px] font-data px-2 py-1 rounded border uppercase tracking-wider bg-surface text-text-muted border-border flex items-center gap-1 inline-flex">
+                      <Github className="h-3 w-3" />
+                      Sourced via GitHub
+                    </span>
+                  )}
                   <span className={`text-xs font-data font-medium uppercase ${
                     app.stage === 'decided' ? 'text-trust'
                       : app.stage === 'sourced' ? 'text-text-muted'
@@ -194,13 +197,16 @@ export default function InvestorDashboard() {
                     <td className="px-4 py-3 font-medium text-text">{app.name}</td>
                     <td className="px-4 py-3 text-text-muted">{app.company}</td>
                     <td className="px-4 py-3">
-                      <span className={`text-[10px] font-data px-2 py-0.5 rounded border uppercase tracking-wider ${
-                        app.source === 'inbound'
-                          ? 'bg-action/10 text-action border-action/20'
-                          : 'bg-trust/10 text-trust border-trust/20'
-                      }`}>
-                        source: {app.source}
-                      </span>
+                      {app.source === 'inbound' ? (
+                        <span className="text-[10px] font-data px-2 py-0.5 rounded border uppercase tracking-wider bg-action/10 text-action border-action/20">
+                          Inbound
+                        </span>
+                      ) : (
+                        <span className="text-[10px] font-data px-2 py-0.5 rounded border uppercase tracking-wider bg-surface text-text-muted border-border flex items-center gap-1 inline-flex">
+                          <Github className="h-3 w-3" />
+                          Sourced via GitHub
+                        </span>
+                      )}
                     </td>
                     <td className="px-4 py-3">
                       <span className={`text-xs font-data font-medium uppercase ${
