@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
@@ -13,6 +13,18 @@ import PipelineStepper from '@/components/PipelineStepper';
 export default function Home() {
   const { data: session, status } = useSession();
   const router = useRouter();
+  const [showcaseClaim, setShowcaseClaim] = useState<any>(null);
+
+  useEffect(() => {
+    fetch('/api/showcase-claim')
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.success && data.claim) {
+          setShowcaseClaim(data.claim);
+        }
+      })
+      .catch((err) => console.error('Error fetching showcase claim:', err));
+  }, []);
 
   useEffect(() => {
     if (status === 'authenticated') {
@@ -128,11 +140,11 @@ export default function Home() {
           </div>
           <div className="flex justify-start md:justify-end">
             <EvidenceReceipt
-              claim="Example: 500+ GitHub stars in 60 days"
-              source="https://github.com/scoutlayer/core-engine"
-              confidence={94}
-              verifiedBy="tavily"
-              timestamp="2026-07-18 21:50 UTC"
+              claim={showcaseClaim ? showcaseClaim.claim : "Example: 500+ GitHub stars in 60 days"}
+              source={showcaseClaim ? showcaseClaim.evidenceUrl : "https://github.com/scoutlayer/core-engine"}
+              confidence={showcaseClaim ? showcaseClaim.confidence : 94}
+              verifiedBy={showcaseClaim ? showcaseClaim.verifiedBy : "tavily"}
+              timestamp={showcaseClaim && showcaseClaim.createdAt ? new Date(showcaseClaim.createdAt).toISOString().replace('T', ' ').substring(0, 16) + ' UTC' : "2026-07-18 21:50 UTC"}
             />
           </div>
         </section>
