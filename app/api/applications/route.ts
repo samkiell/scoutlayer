@@ -133,6 +133,7 @@ export async function GET(req: Request) {
         hasApplied: !!application,
         hasActiveApplication,
         application,
+        applications,
         founder,
       });
     }
