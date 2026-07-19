@@ -1,6 +1,12 @@
 import clientPromise from '@/lib/db';
 import { ObjectId } from 'mongodb';
 import { OpenAI } from 'openai';
+import {
+  truncateRepoDescription,
+  truncateDeckText,
+  truncateLongField,
+  checkTokenBudget,
+} from '@/lib/utils/truncation';
 
 export type ScreeningEvent =
   | { type: 'run_start'; message: string }
@@ -19,10 +25,20 @@ const client = new OpenAI({
   baseURL: 'https://api.groq.com/openai/v1',
 });
 
-// Primary model is gpt-oss-120b per PRD. Fallbacks defined for robustness.
-const MODELS = ['gpt-oss-120b', 'llama-3.3-70b-versatile'];
+// Primary model is openai/gpt-oss-120b per PRD.
+const MODELS = ['openai/gpt-oss-120b'];
 
-async function callGroqWithFallback(systemPrompt: string, userPrompt: string): Promise<string> {
+async function callGroqWithFallback(
+  systemPrompt: string,
+  userPrompt: string,
+  appendLog?: (message: string, level?: 'info' | 'warn' | 'error') => Promise<void>
+): Promise<string> {
+  const totalPromptText = systemPrompt + userPrompt;
+  const { tokens } = checkTokenBudget(totalPromptText);
+  if (tokens > 8000 && appendLog) {
+    await appendLog(`[Warning] Prompt size estimated at ${tokens} tokens, exceeding safe threshold of 8000.`, 'warn');
+  }
+
   let lastError: any = null;
   for (const model of MODELS) {
     try {
