@@ -99,6 +99,9 @@ export default function FounderProfile() {
   const [isDeciding, setIsDeciding] = useState(false);
   const [logs, setLogs] = useState<string[]>([]);
   const logTerminalRef = useRef<HTMLDivElement>(null);
+  const consoleContainerRef = useRef<HTMLDivElement>(null);
+  const shouldScrollRef = useRef(true);
+  const hasScrolledConsoleRef = useRef(false);
 
   // Delete states
   const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
@@ -160,7 +163,24 @@ export default function FounderProfile() {
   }, [id]);
 
   useEffect(() => {
-    if (logTerminalRef.current) {
+    if ((isScreening || isDeciding) && consoleContainerRef.current) {
+      if (!hasScrolledConsoleRef.current) {
+        consoleContainerRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        hasScrolledConsoleRef.current = true;
+      }
+    } else if (!isScreening && !isDeciding) {
+      hasScrolledConsoleRef.current = false;
+    }
+  }, [isScreening, isDeciding]);
+
+  const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
+    const el = e.currentTarget;
+    const distanceFromBottom = el.scrollHeight - el.scrollTop - el.clientHeight;
+    shouldScrollRef.current = distanceFromBottom < 50;
+  };
+
+  useEffect(() => {
+    if (logTerminalRef.current && shouldScrollRef.current) {
       logTerminalRef.current.scrollTo({ top: logTerminalRef.current.scrollHeight, behavior: 'smooth' });
     }
   }, [logs]);
@@ -565,14 +585,14 @@ export default function FounderProfile() {
           </div>
 
           {/* SSE Stream Logs Console (if running/active) */}
-          {(isScreening || logs.length > 0) && (
-            <div className="bg-surface border border-border rounded-xl overflow-hidden flex flex-col">
+          {(isScreening || isDeciding || logs.length > 0) && (
+            <div ref={consoleContainerRef} className="bg-surface border border-border rounded-xl overflow-hidden flex flex-col">
               <div className="bg-bg/60 border-b border-border/80 px-4 py-2 flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <Code2 className="h-4 w-4 text-action" />
                   <span className="font-data text-xs font-semibold uppercase tracking-wider text-text-muted">Agent Execution Console</span>
                 </div>
-                {isScreening && (
+                {(isScreening || isDeciding) && (
                   <div className="flex items-center gap-1.5 text-xs text-action">
                     <Loader2 className="h-3 w-3 animate-spin" />
                     <span>Running</span>
@@ -581,6 +601,7 @@ export default function FounderProfile() {
               </div>
               <div
                 ref={logTerminalRef}
+                onScroll={handleScroll}
                 className="bg-black/90 p-4 h-48 overflow-y-auto font-data text-xs text-trust leading-relaxed flex flex-col gap-1 select-text scrollbar-thin"
               >
                 {logs.map((log, idx) => (

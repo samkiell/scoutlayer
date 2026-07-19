@@ -83,6 +83,8 @@ export default function ScoutPage() {
   const [runId, setRunId] = useState<string | null>(null);
   const logRef = useRef<HTMLDivElement>(null);
   const logContainerRef = useRef<HTMLDivElement>(null);
+  const shouldScrollRef = useRef(true);
+  const hasScrolledScoutRef = useRef(false);
 
   // ── Persisted pipeline: this investor's outbound + all inbound ─────────────
   interface PipelineItem {
@@ -174,13 +176,32 @@ export default function ScoutPage() {
     );
   });
 
+  useEffect(() => {
+    if (status === 'running' && logContainerRef.current) {
+      if (!hasScrolledScoutRef.current) {
+        logContainerRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        hasScrolledScoutRef.current = true;
+      }
+    } else if (status !== 'running') {
+      hasScrolledScoutRef.current = false;
+    }
+  }, [status]);
+
+  const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
+    const el = e.currentTarget;
+    const distanceFromBottom = el.scrollHeight - el.scrollTop - el.clientHeight;
+    shouldScrollRef.current = distanceFromBottom < 50;
+  };
+
   const addEvent = useCallback((evt: SourcingEvent) => {
     setEvents((prev) => [...prev, evt]);
-    // Auto-scroll log
-    setTimeout(() => {
-      logRef.current?.scrollTo({ top: logRef.current.scrollHeight, behavior: 'smooth' });
-    }, 50);
   }, []);
+
+  useEffect(() => {
+    if (logRef.current && shouldScrollRef.current) {
+      logRef.current.scrollTo({ top: logRef.current.scrollHeight, behavior: 'smooth' });
+    }
+  }, [events]);
 
   const addKeyword = (kw: string) => {
     if (kw && !keywords.includes(kw)) {
@@ -220,12 +241,7 @@ export default function ScoutPage() {
     if (location) thesis.location = location;
     if (language) thesis.language = language;
 
-    // Scroll down to center the log container area in the viewport
-    setTimeout(() => {
-      if (logContainerRef.current) {
-        logContainerRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      }
-    }, 50);
+    // The console/log container is automatically scrolled into view reactively via useEffect
 
     try {
       const res = await fetch('/api/scout', {
@@ -541,6 +557,7 @@ export default function ScoutPage() {
 
             <div
               ref={logRef}
+              onScroll={handleScroll}
               className="p-4 max-h-72 overflow-y-auto flex flex-col gap-1 font-data text-xs"
             >
               {events.map((evt, i) => (
