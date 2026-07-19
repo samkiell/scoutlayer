@@ -36,6 +36,7 @@ import {
   truncateLongField,
   checkTokenBudget,
 } from '@/lib/utils/truncation';
+import { extractDeckText } from '@/lib/sources/deck';
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 

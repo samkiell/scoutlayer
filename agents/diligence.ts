@@ -342,6 +342,22 @@ export async function* runDiligenceAgent(
 
     const claims = buildClaims({ application, founder, profile, screening });
 
+    const deckResult = await extractDeckText((application as any).deck);
+    if (deckResult.analyzed && deckResult.text) {
+      const deckClaimText = extractClaimFromDeckText(deckResult.text);
+      claims.push({
+        claim: `Deck states: "${deckClaimText}"`,
+        query: deckClaimText,
+        kind: 'company',
+      });
+    } else if (!deckResult.analyzed && (application as any).deck) {
+      claims.push({
+        claim: `Deck link provided but not analyzed (${deckResult.reason})`,
+        query: '',
+        kind: 'company',
+      });
+    }
+
     if (claims.length === 0) {
       await appendLog('No claims extracted from available data; writing empty trustClaims run', 'warn');
       yield { type: 'run_done', message: 'No diligence claims extracted' };
