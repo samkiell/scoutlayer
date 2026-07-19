@@ -5,6 +5,7 @@ import React, { useEffect, useState, useRef } from 'react';
 import Navbar from '@/components/Navbar';
 import PipelineStepper from '@/components/PipelineStepper';
 import EvidenceReceipt from '@/components/EvidenceReceipt';
+import MemoDownloadButton from '@/components/MemoDownloadButton';
 import { useRouter, useParams } from 'next/navigation';
 import { ArrowLeft, Award, TrendingUp, TrendingDown, Minus, Play, Loader2, Code2, ShieldAlert, FileText, Trash2, Github } from 'lucide-react';
 import { toast } from 'sonner';
@@ -613,13 +614,16 @@ export default function FounderProfile() {
           <section className="flex flex-col gap-3 print-memo-section">
             <div className="flex justify-between items-center no-print">
               <h2 className="font-display text-lg font-bold tracking-tight">Investment Memo</h2>
-              <button
-                onClick={() => window.print()}
-                className="flex items-center gap-2 px-3 py-1.5 bg-surface hover:bg-surface/80 border border-border rounded-lg text-xs font-semibold text-text-muted hover:text-text transition-all cursor-pointer"
-              >
-                <FileText className="h-3.5 w-3.5" />
-                Export PDF
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => window.print()}
+                  className="flex items-center gap-2 px-3 py-1.5 bg-surface hover:bg-surface/80 border border-border rounded-lg text-xs font-semibold text-text-muted hover:text-text transition-all cursor-pointer"
+                >
+                  <FileText className="h-3.5 w-3.5" />
+                  Print Memo
+                </button>
+                <MemoDownloadButton companyName={founder.company} memo={memo} />
+              </div>
             </div>
             <h2 className="font-display text-lg font-bold tracking-tight hidden print:block">Investment Memo - {founder.company}</h2>
             <div className="bg-surface border border-border rounded-xl p-6 md:p-8 flex flex-col gap-7 print-container">
