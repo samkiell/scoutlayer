@@ -611,7 +611,7 @@ export default function ScoutPage() {
                           </span>
                         ) : (
                           <span className="text-[10px] font-data px-2 py-0.5 rounded border uppercase tracking-wider bg-surface text-text-muted border-border flex items-center gap-1 inline-flex">
-                            <Github className="h-3.5 w-3.5" />
+                            <GithubIcon className="h-3.5 w-3.5" />
                             Sourced via GitHub
                           </span>
                         )}
