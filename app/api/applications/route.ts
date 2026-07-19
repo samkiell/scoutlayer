@@ -194,7 +194,7 @@ export async function POST(req: Request) {
     }
 
     const body = await req.json();
-    const { companyName, deckUrl, oneLiner, github, context } = body;
+    const { companyName, deckUrl, oneLiner, github, context, startupUrl, additionalLinks } = body;
 
     // Validation
     if (!companyName || !companyName.trim()) {
@@ -225,7 +225,7 @@ export async function POST(req: Request) {
     let structuredProfile: any = {
       oneLiner,
       description: context || oneLiner,
-      websiteUrl: undefined,
+      websiteUrl: startupUrl || undefined,
       coldStart: true,
       coldStartScoredPath: true,
     };
@@ -276,7 +276,7 @@ export async function POST(req: Request) {
           sectors: primaryLanguages.length > 0 ? primaryLanguages : undefined,
           location: profile.location || undefined,
           githubUrl: profile.html_url,
-          websiteUrl: profile.blog || undefined,
+          websiteUrl: startupUrl || profile.blog || undefined,
           twitterUsername: profile.twitter_username || undefined,
           avatarUrl: profile.avatar_url,
           followers: profile.followers,
@@ -309,6 +309,8 @@ export async function POST(req: Request) {
       channel: 'self-reported',
       rawSignals,
       structuredProfile,
+      startupUrl: startupUrl || undefined,
+      additionalLinks: additionalLinks || [],
       founderScore: {
         value: 0,
         history: [],

@@ -1,39 +1,24 @@
- /**
- * ScoutLayer — Verifier (Diligence) Agent
+/**
+ * ScoutLayer — Verifier (Diligence) Agent using OpenAI (gpt-4.1-mini)
  *
  * Input:  applicationId
  * Output: AsyncGenerator streaming granular diligence progress events.
- *
- * Phase 5 scope:
- * - Extract discrete, checkable claims from existing data (founder structuredProfile + screenings rationales)
- * - For each claim, run Tavily web search to corroborate via independent sources
- * - Persist each claim as a `trustClaims` doc (never drop unverifiable claims)
- * - Update applications.status to 'diligence' -> 'diligenced' and update pipelineRuns doc
- *
- * Note:
- * - Memo generation is Phase 6 and is intentionally not implemented here.
  */
 
 import clientPromise from '@/lib/db';
 import { ObjectId } from 'mongodb';
 import type { TrustClaim, StructuredProfile } from '@/types';
-import { extractDeckText, extractClaimFromDeckText } from '@/lib/sources/deck';
+import { extractDeckText } from '@/lib/sources/deck';
+import { OpenAI } from 'openai';
+import {
+  truncateRepoDescription,
+  truncateDeckText,
+  truncateLongField,
+} from '@/lib/utils/truncation';
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
 type MongoLogLevel = 'info' | 'warn' | 'error';
-
-type PipelineRunDoc = {
-  _id: unknown;
-
-  applicationId: string;
-  founderId: string;
-  stage: 'diligence';
-  status: 'pending' | 'running' | 'done' | 'error';
-  log: Array<{ timestamp: Date; message: string; level: MongoLogLevel }>;
-  createdAt: Date;
-  updatedAt?: Date;
-};
 
 export type DiligenceEvent =
   | { type: 'run_start'; message: string }
@@ -52,6 +37,11 @@ export type DiligenceEvent =
 type TavilyResult = {
   results?: Array<{ url?: string; title?: string; content?: string }>;
 };
+
+// Initialize OpenAI client
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY || '',
+});
 
 async function tavilySearch(query: string): Promise<{
   ok: boolean;
@@ -110,143 +100,6 @@ function clamp(n: number, min: number, max: number) {
   return Math.max(min, Math.min(max, n));
 }
 
-function safeString(input: unknown): string {
-  if (input === null || input === undefined) return '';
-  return String(input);
-}
-
-function extractMarketContextFromScreening(screening: any): string | null {
-  const marketEvidence = screening?.marketAxis?.evidence;
-  if (!marketEvidence) return null;
-  const s = safeString(marketEvidence);
-
-  // Heuristic: attempt to capture a bracketed or quoted space/market mention.
-  const bracket = s.match(/\[([^\]]{3,80})\]/);
-  if (bracket?.[1]) return bracket[1].trim();
-
-  const quoted = s.match(/"([^"]{3,80})"/);
-  if (quoted?.[1]) return quoted[1].trim();
-
-  // Fallback: use the entire evidence as "market context".
-  return s.length > 6 ? s : null;
-}
-
-function buildClaims({
-  application,
-  founder,
-  profile,
-  screening,
-}: {
-  application: any;
-  founder: any;
-  profile: StructuredProfile;
-  screening: any;
-}): Array<{
-  claim: string;
-  query: string;
-  kind: 'traction' | 'background' | 'company' | 'repo' | 'market_context';
-}> {
-  const claims: Array<{ claim: string; query: string; kind: any }> = [];
-
-  const company = application?.companyInfo?.name || profile?.company || founder?.company;
-  const githubUrl = profile?.githubUrl;
-  const topRepos: Array<any> = profile?.topRepos || [];
-
-  // Founder background / company
-  if (company && company.trim().length > 1) {
-    claims.push({
-      claim: `Founder is associated with ${company}`,
-      query: `${founder?.name || 'founder'} ${company} founder`,
-      kind: 'company',
-    });
-  }
-
-  // GitHub reputation style claims
-  const followers = typeof profile?.followers === 'number' ? profile.followers : null;
-  if (followers !== null) {
-    claims.push({
-      claim: `Founder has about ${followers} followers on GitHub`,
-      query: `${founder?.githubUsername || githubUrl || ''} followers GitHub ${followers}`.trim(),
-      kind: 'traction',
-    });
-  }
-
-  if (typeof profile?.publicRepos === 'number') {
-    claims.push({
-      claim: `Founder has ${profile.publicRepos} public GitHub repos`,
-      query: `${founder?.githubUsername || githubUrl || ''} public repos GitHub`,
-      kind: 'traction',
-    });
-  }
-
-  // Repo claims (top repo stars and identity)
-  const maxRepos = Math.min(topRepos.length, 2);
-  for (let i = 0; i < maxRepos; i++) {
-    const r = topRepos[i];
-    if (!r?.name) continue;
-    const stars = typeof r.stars === 'number' ? r.stars : null;
-    claims.push({
-      claim: `${r.name} repo has about ${stars ?? 'unknown'} stars`,
-      query: `${r.name} GitHub stargazers ${stars ?? ''}`.trim(),
-      kind: 'repo',
-    });
-
-    // Also add a discrete repo ownership claim if we can infer it.
-    const fullClaim = `${r.name} is published under the founder's GitHub account`;
-    claims.push({
-      claim: fullClaim,
-      query: `${founder?.githubUsername || ''} ${r.name} GitHub`.trim(),
-      kind: 'repo',
-    });
-  }
-
-  // Market / space context (from screening rationale) — Phase 5 weakness strengthening.
-  const marketContext = extractMarketContextFromScreening(screening);
-  if (marketContext) {
-    claims.push({
-      claim: `Market context: ${marketContext}`,
-      query: `${marketContext} competitive landscape`,
-      kind: 'market_context',
-    });
-  }
-
-  // De-duplicate by claim text.
-  const seen = new Set<string>();
-  return claims.filter((c) => {
-    const key = c.claim.trim();
-    if (!key) return false;
-    if (seen.has(key)) return false;
-    seen.add(key);
-    return true;
-  });
-}
-
-function toEvidenceUrl(candidateResults: Array<{ url?: string; title?: string }>): string | undefined {
-  const first = candidateResults.find((r) => !!r.url);
-  return first?.url;
-}
-
-function confidenceFromResults({
-  claimKind,
-  hadResults,
-  rateLimited,
-}: {
-  claimKind: string;
-  hadResults: boolean;
-  rateLimited: boolean;
-}): number {
-  // Conservative: only high confidence when we actually got results.
-  if (rateLimited) return 40;
-  if (!hadResults) return 15;
-
-  // Heuristic confidence tiers.
-  if (claimKind === 'repo') return 80;
-  if (claimKind === 'company') return 70;
-  if (claimKind === 'traction') return 65;
-  if (claimKind === 'market_context') return 60;
-  return 55;
-}
-
 export async function* runDiligenceAgent(
   applicationId: string
 ): AsyncGenerator<DiligenceEvent, void, unknown> {
@@ -269,7 +122,6 @@ export async function* runDiligenceAgent(
   const trustClaimsCol = db.collection<
     Omit<TrustClaim, '_id'> & { _id?: any }
   >('trustClaims');
-
 
   const appObjectId = new ObjectId(applicationId);
   const application = await appsCol.findOne({ _id: appObjectId });
@@ -300,7 +152,7 @@ export async function* runDiligenceAgent(
       founderId: application.founderId,
       stage: 'diligence',
       status: 'running',
-      log: [{ timestamp: new Date(), message: 'Started diligence verifier', level: 'info' }],
+      log: [{ timestamp: new Date(), message: 'Started diligence verifier (OpenAI gpt-4.1-mini)', level: 'info' }],
       createdAt: new Date(),
       updatedAt: new Date(),
     });
@@ -310,7 +162,7 @@ export async function* runDiligenceAgent(
       { _id: runDoc._id },
       {
         $set: { status: 'running', updatedAt: new Date() },
-        $push: { log: { timestamp: new Date(), message: 'Restarted diligence verifier', level: 'info' } },
+        $push: { log: { timestamp: new Date(), message: 'Restarted diligence verifier (OpenAI gpt-4.1-mini)', level: 'info' } },
       }
     );
   }
@@ -334,28 +186,99 @@ export async function* runDiligenceAgent(
     await appsCol.updateOne({ _id: appObjectId }, { $set: { status: 'diligence' } });
   }
 
-  yield { type: 'run_start', message: 'Initiating diligence verifier agent (per-claim Tavily checks)' };
-  await appendLog('Diligence verifier initiated');
+  yield { type: 'run_start', message: 'Initiating diligence verifier agent (OpenAI gpt-4.1-mini + Tavily verification)' };
+  await appendLog('Diligence verifier initiated using OpenAI gpt-4.1-mini');
+
+  let totalInputTokens = 0;
+  let totalOutputTokens = 0;
 
   try {
     const profile: StructuredProfile = founder?.structuredProfile || {};
+    const companyName = application?.companyInfo?.name || profile?.company || founder?.company || 'the startup';
 
-    const claims = buildClaims({ application, founder, profile, screening });
+    // Consolidate text sources and truncate them for token/cost safety (applying limits)
+    const pitch = truncateLongField(application?.companyInfo?.oneLiner || '', 500) || '';
+    const additionalContext = truncateLongField(application?.companyInfo?.description || '', 1000) || '';
 
+    const githubBio = truncateLongField(profile.bio || profile.description || '', 500) || '';
+    const reposText = (profile.topRepos || []).slice(0, 5).map((r: any) => {
+      const desc = truncateRepoDescription(r.description || '');
+      return `- Repo: ${r.name} (${r.language || 'unknown'}): ${r.stars} stars. Description: ${desc}`;
+    }).join('\n');
+
+    let deckText = '';
     const deckResult = await extractDeckText((application as any).deck);
     if (deckResult.analyzed && deckResult.text) {
-      const deckClaimText = extractClaimFromDeckText(deckResult.text);
-      claims.push({
-        claim: `Deck states: "${deckClaimText}"`,
-        query: deckClaimText,
-        kind: 'company',
-      });
-    } else if (!deckResult.analyzed && (application as any).deck) {
-      claims.push({
-        claim: `Deck link provided but not analyzed (${deckResult.reason})`,
-        query: '',
-        kind: 'company',
-      });
+      deckText = truncateDeckText(deckResult.text) || '';
+    }
+
+    const startupUrl = founder.startupUrl || '';
+    const additionalLinksText = (founder.additionalLinks || []).map((l: any) => `- ${l.label || 'Link'}: ${l.url}`).join('\n');
+
+    const consolidatedContext = `
+Company Name: ${companyName}
+Pitch (One-liner): ${pitch}
+Additional Context: ${additionalContext}
+
+GitHub Username: ${founder.githubUsername || 'None'}
+GitHub Bio: ${githubBio}
+GitHub Followers: ${profile.followers ?? 'unknown'}
+GitHub Public Repos Count: ${profile.publicRepos ?? 'unknown'}
+Top Repositories:
+${reposText}
+
+Extracted Deck Text:
+${deckText}
+
+Startup Website URL: ${startupUrl}
+Additional Links:
+${additionalLinksText}
+`.trim();
+
+    // 1. Extract 5-8 checkable claims using gpt-4.1-mini
+    const systemPromptClaims = `You are a startup diligence assistant. Your task is to extract between 5 and 8 discrete, specific, and independently-checkable claims from a founder's application context.
+Focus on claims that can be corroborated or disproved via web searches (e.g. repository star counts, founder background, product/startup websites, launches, feature claims, customer traction, and public links).
+Do not extract vague, subjective claims. Extract concrete claims like "claims 500+ GitHub stars on [repo]", "claims launch on Product Hunt", "claims enterprise traction in pitch", "claims website URL [url]".
+Format the output as a JSON object with a single key "claims" containing an array of claims. Each claim must be an object with:
+- "claim": The specific checkable claim text.
+- "query": A targeted, specific search query designed to verify/corroborate this claim via search engine (e.g. if company name is X and claim is Y, query should search for Y in the context of X).
+- "kind": One of "traction", "background", "company", "repo", "market_context".
+
+Example format:
+{
+  "claims": [
+    {
+      "claim": "Claims 500+ GitHub stars on scoutlayer repo",
+      "query": "scoutlayer github stars",
+      "kind": "repo"
+    }
+  ]
+}
+`;
+
+    await appendLog('Calling OpenAI gpt-4.1-mini to extract claims...');
+
+    const claimsResponse = await openai.chat.completions.create({
+      model: 'gpt-4.1-mini',
+      messages: [
+        { role: 'system', content: systemPromptClaims },
+        { role: 'user', content: `Here is the consolidated context for founder ${founder.name || 'Unknown'}:\n\n${consolidatedContext}` }
+      ],
+      temperature: 0.1,
+      response_format: { type: 'json_object' }
+    });
+
+    if (claimsResponse.usage) {
+      totalInputTokens += claimsResponse.usage.prompt_tokens;
+      totalOutputTokens += claimsResponse.usage.completion_tokens;
+    }
+
+    const claimsResult = JSON.parse(claimsResponse.choices[0].message?.content || '{}');
+    let claims: Array<{ claim: string; query: string; kind: string }> = claimsResult.claims || [];
+
+    // Cap total claims processed per diligence run at 8
+    if (claims.length > 8) {
+      claims = claims.slice(0, 8);
     }
 
     if (claims.length === 0) {
@@ -369,29 +292,86 @@ export async function* runDiligenceAgent(
       return;
     }
 
-    // Run per-claim Tavily checks
+    await appendLog(`Extracted ${claims.length} claims. Initiating Tavily search and OpenAI verification per claim...`);
+
+    // 2. Process each claim
     for (let i = 0; i < claims.length; i++) {
       const { claim, query, kind } = claims[i];
 
       yield { type: 'claim_start', index: i, claim };
       await appendLog(`Claim ${i + 1}/${claims.length} start: ${claim}`);
 
+      // Run primary Tavily search
       const search = await tavilySearch(query || claim);
+      let searchResults = search.results || [];
 
-      const hadResults = !!search.results && search.results.length > 0;
-      const evidenceUrl = hadResults ? toEvidenceUrl(search.results || []) : undefined;
+      // If startupUrl was provided, also run one Tavily search against that domain specifically for corroboration
+      if (startupUrl) {
+        try {
+          const domain = new URL(startupUrl).hostname;
+          if (domain) {
+            const domainSearch = await tavilySearch(`site:${domain} ${query || claim}`);
+            if (domainSearch.ok && domainSearch.results && domainSearch.results.length > 0) {
+              searchResults = [...searchResults, ...domainSearch.results];
+            }
+          }
+        } catch (e) {
+          // Ignore invalid startup URL format
+        }
+      }
 
-      const confidence = confidenceFromResults({
-        claimKind: kind,
-        hadResults,
-        rateLimited: !!search.rateLimited,
+      const resultsText = searchResults.length > 0
+        ? searchResults.map((r, idx) => `[Result ${idx + 1}] Title: ${r.title}\nURL: ${r.url}\nContentSnippet: ${r.content}\n`).join('\n')
+        : 'No search results found.';
+
+      // Use gpt-4.1-mini to read results and evaluate corroboration
+      const verifySystemPrompt = `You are a startup diligence verifier. Your task is to read search results and reason about whether they corroborate or disprove a specific claim.
+You must output a 0-100 confidence score representing how strongly the search results corroborate the claim, along with a brief, honest justification (1-2 sentences).
+Be highly analytical:
+- Confidence score should reflect real corroboration strength, not just search-hit presence (e.g. simply seeing a hit doesn't mean verified).
+- If the claim is backed by a verified GitHub profile/stars matching the search hits, confidence can be 80-100.
+- If it's a website reference but no independent verification, or the claim is not supported, confidence should be low.
+- Return a JSON object with:
+  - "confidence": number (0-100)
+  - "reasoning": string (brief reasoning for the score)
+  - "evidenceUrl": string (the most relevant url from the search results that corroborates/proves this claim, or null if none)
+
+Example format:
+{
+  "confidence": 85,
+  "reasoning": "Search results confirm the repository exists and matches the stargazers count.",
+  "evidenceUrl": "https://github.com/..."
+}
+`;
+
+      const verifyResponse = await openai.chat.completions.create({
+        model: 'gpt-4.1-mini',
+        messages: [
+          { role: 'system', content: verifySystemPrompt },
+          {
+            role: 'user',
+            content: `Claim to verify: "${claim}"\nTargeted Search Query used: "${query || claim}"\n\nSearch Results:\n${resultsText}`
+          }
+        ],
+        temperature: 0.1,
+        response_format: { type: 'json_object' }
       });
 
-      const verifiedBy: TrustClaim['verifiedBy'] = hadResults ? 'tavily' : 'unverified';
+      if (verifyResponse.usage) {
+        totalInputTokens += verifyResponse.usage.prompt_tokens;
+        totalOutputTokens += verifyResponse.usage.completion_tokens;
+      }
+
+      const verifyResult = JSON.parse(verifyResponse.choices[0].message?.content || '{}');
+      const confidence = typeof verifyResult.confidence === 'number' ? verifyResult.confidence : 0;
+      const reasoning = verifyResult.reasoning || 'No reasoning provided.';
+      const evidenceUrl = verifyResult.evidenceUrl || undefined;
+
+      const verifiedBy: TrustClaim['verifiedBy'] = searchResults.length > 0 && confidence >= 70 ? 'tavily' : 'unverified';
 
       const trustClaim: Omit<TrustClaim, '_id'> = {
         applicationId,
-        claim,
+        claim: `${claim} (${reasoning})`,
         evidenceUrl,
         confidence: clamp(Math.round(confidence), 0, 100),
         verifiedBy,
@@ -403,17 +383,20 @@ export async function* runDiligenceAgent(
       yield {
         type: 'claim_checked',
         index: i,
-        claim,
+        claim: trustClaim.claim,
         verifiedBy,
         confidence: trustClaim.confidence,
         evidenceUrl: trustClaim.evidenceUrl,
       };
 
       await appendLog(
-        `Claim ${i + 1} checked: verifiedBy=${verifiedBy}, confidence=${trustClaim.confidence}${evidenceUrl ? `, evidence=${evidenceUrl}` : ''}`,
-        hadResults ? 'info' : search.rateLimited ? 'warn' : 'warn'
+        `Claim ${i + 1} checked: verifiedBy=${verifiedBy}, confidence=${trustClaim.confidence}, reasoning="${reasoning}"${evidenceUrl ? `, evidence=${evidenceUrl}` : ''}`
       );
     }
+
+    // Log total token usage observed
+    console.log(`[Diligence Total Token Usage] Input: ${totalInputTokens}, Output: ${totalOutputTokens}, Total: ${totalInputTokens + totalOutputTokens}`);
+    await appendLog(`Diligence completed. Total estimated token usage: Input: ${totalInputTokens}, Output: ${totalOutputTokens}`);
 
     await appsCol.updateOne({ _id: appObjectId }, { $set: { status: 'diligenced' } });
 
@@ -421,7 +404,7 @@ export async function* runDiligenceAgent(
       { _id: runObjectId },
       {
         $set: { status: 'done', updatedAt: new Date() },
-        $push: { log: { timestamp: new Date(), message: 'Diligence verifier completed successfully', level: 'info' } } as any,
+        $push: { log: { timestamp: new Date(), message: 'Diligence verifier completed successfully using OpenAI', level: 'info' } } as any,
       }
     );
 
@@ -439,4 +422,3 @@ export async function* runDiligenceAgent(
     yield { type: 'run_error', message: msg };
   }
 }
-

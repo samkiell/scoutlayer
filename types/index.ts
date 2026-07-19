@@ -18,6 +18,8 @@ export interface Founder {
   channel?: string;
   rawSignals?: RawSignal[];
   structuredProfile?: StructuredProfile;
+  startupUrl?: string;
+  additionalLinks?: Array<{ url: string; label?: string }>;
   founderScore: {
     value: number;
     history: Array<{

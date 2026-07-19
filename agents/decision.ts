@@ -353,7 +353,7 @@ Return STRICTLY a JSON object with exactly these keys (do not add other sections
     const gapsFlagged = Array.isArray(memoResult.gapsFlagged) ? memoResult.gapsFlagged.map(String) : [];
     if (application.deck && !deckExtract.analyzed) {
       const disclosure = `Deck link provided but contents not analyzed — ${deckExtract.reason}`;
-      if (!gapsFlagged.some((g) => g.toLowerCase().includes('deck'))) {
+      if (!gapsFlagged.some((g: string) => g.toLowerCase().includes('deck'))) {
         gapsFlagged.push(disclosure);
       }
     }

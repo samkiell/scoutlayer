@@ -102,6 +102,8 @@ export async function GET(
           source: founder.source,
           structuredProfile: founder.structuredProfile,
           founderScore: founder.founderScore,
+          startupUrl: founder.startupUrl,
+          additionalLinks: founder.additionalLinks,
         },
         screening: screening ? {
           founderAxis: screening.founderAxis,

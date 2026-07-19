@@ -21,7 +21,25 @@ export default function FounderApply() {
     oneLiner: '',
     github: '',
     context: '',
+    startupUrl: '',
   });
+  const [additionalLinks, setAdditionalLinks] = useState<Array<{ url: string; label: string }>>([]);
+
+  const handleAddLink = () => {
+    if (additionalLinks.length < 3) {
+      setAdditionalLinks([...additionalLinks, { url: '', label: '' }]);
+    }
+  };
+
+  const handleRemoveLink = (index: number) => {
+    setAdditionalLinks(additionalLinks.filter((_, i) => i !== index));
+  };
+
+  const handleLinkChange = (index: number, key: 'url' | 'label', value: string) => {
+    const updated = [...additionalLinks];
+    updated[index][key] = value;
+    setAdditionalLinks(updated);
+  };
 
   // Auth Guard: Only founders allowed. Redirect investors.
   useEffect(() => {
@@ -77,6 +95,26 @@ export default function FounderApply() {
       return;
     }
 
+    if (form.startupUrl.trim()) {
+      try {
+        new URL(form.startupUrl.trim());
+      } catch {
+        toast.error('Startup/Product Website must be a valid URL.');
+        return;
+      }
+    }
+
+    for (const link of additionalLinks) {
+      if (link.url.trim()) {
+        try {
+          new URL(link.url.trim());
+        } catch {
+          toast.error(`Additional Link URL "${link.url}" must be a valid URL.`);
+          return;
+        }
+      }
+    }
+
     setLoading(true);
     // Re-verify at submission time too
     try {
@@ -102,6 +140,11 @@ export default function FounderApply() {
           oneLiner: form.oneLiner.trim(),
           github: form.github.trim() || undefined,
           context: form.context.trim() || undefined,
+          startupUrl: form.startupUrl.trim() || undefined,
+          additionalLinks: additionalLinks.filter(l => l.url.trim().length > 0).map(l => ({
+            url: l.url.trim(),
+            label: l.label.trim() || undefined
+          })),
         }),
       });
 
@@ -245,6 +288,70 @@ export default function FounderApply() {
             <span className="text-[10px] text-text-muted">
               If provided, we will automatically enrich your application using your GitHub profile &amp; repos.
             </span>
+          </div>
+
+          {/* Links Section */}
+          <div className="border-t border-border pt-6 flex flex-col gap-4">
+            <div className="flex flex-col gap-1">
+              <h3 className="text-sm font-bold text-text uppercase tracking-wider">Links</h3>
+              <p className="text-[11px] text-text-muted">
+                GitHub profiles are automatically verified. Other links provide context for our diligence process but aren&apos;t independently scraped.
+              </p>
+            </div>
+
+            {/* Startup/Product Website */}
+            <div className="flex flex-col gap-2">
+              <label className="text-xs font-medium text-text-muted uppercase tracking-wider">Startup/Product Website (Optional)</label>
+              <input
+                type="url"
+                placeholder="https://yourstartup.com"
+                value={form.startupUrl}
+                onChange={(e) => setForm({ ...form, startupUrl: e.target.value })}
+                className="w-full bg-bg border border-border rounded-xl px-4 py-3 text-sm text-text transition-colors focus:border-action"
+              />
+            </div>
+
+            {/* Additional Links */}
+            <div className="flex flex-col gap-3">
+              <label className="text-xs font-medium text-text-muted uppercase tracking-wider flex items-center justify-between">
+                <span>Additional Links (Optional, Max 3)</span>
+                {additionalLinks.length < 3 && (
+                  <button
+                    type="button"
+                    onClick={handleAddLink}
+                    className="text-xs text-action hover:underline cursor-pointer"
+                  >
+                    + Add Link
+                  </button>
+                )}
+              </label>
+
+              {additionalLinks.map((link, index) => (
+                <div key={index} className="flex gap-2 items-center">
+                  <input
+                    type="text"
+                    placeholder="Label (e.g. Twitter/X, LinkedIn)"
+                    value={link.label}
+                    onChange={(e) => handleLinkChange(index, 'label', e.target.value)}
+                    className="w-1/3 bg-bg border border-border rounded-xl px-3 py-2 text-sm text-text transition-colors focus:border-action"
+                  />
+                  <input
+                    type="url"
+                    placeholder="https://..."
+                    value={link.url}
+                    onChange={(e) => handleLinkChange(index, 'url', e.target.value)}
+                    className="flex-1 bg-bg border border-border rounded-xl px-3 py-2 text-sm text-text transition-colors focus:border-action"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => handleRemoveLink(index)}
+                    className="text-xs text-flag hover:underline cursor-pointer px-2"
+                  >
+                    Remove
+                  </button>
+                </div>
+              ))}
+            </div>
           </div>
 
           {/* Additional Context */}
