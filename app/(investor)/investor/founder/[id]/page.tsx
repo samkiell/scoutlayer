@@ -6,7 +6,7 @@ import Navbar from '@/components/Navbar';
 import PipelineStepper from '@/components/PipelineStepper';
 import EvidenceReceipt from '@/components/EvidenceReceipt';
 import { useRouter, useParams } from 'next/navigation';
-import { ArrowLeft, Award, TrendingUp, TrendingDown, Minus, Play, Loader2, Code2, ShieldAlert } from 'lucide-react';
+import { ArrowLeft, Award, TrendingUp, TrendingDown, Minus, Play, Loader2, Code2, ShieldAlert, FileText } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface AxisScore {
@@ -184,6 +184,65 @@ export default function FounderProfile() {
     }
   };
 
+  const runDecision = async () => {
+    if (isDeciding) return;
+    setIsDeciding(true);
+    setLogs((prev) => [...prev, '[System] Initializing connection to decision synthesizer...']);
+
+    try {
+      const response = await fetch(`/api/memo/${id}`, { method: 'POST' });
+      if (!response.ok || !response.body) {
+        const errData = await response.json().catch(() => ({}));
+        throw new Error(errData?.error ?? `HTTP ${response.status}`);
+      }
+
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = '';
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split('\n\n');
+        buffer = lines.pop() ?? '';
+
+        for (const line of lines) {
+          const dataLine = line.replace(/^data: /, '').trim();
+          if (!dataLine || dataLine === '[DONE]') continue;
+
+          try {
+            const evt = JSON.parse(dataLine);
+            const timestamp = `[${new Date().toLocaleTimeString()}]`;
+
+            if (evt.message) {
+              setLogs((prev) => [...prev, `${timestamp} ${evt.message}`]);
+            }
+
+            if (evt.type === 'founder_score') {
+              setLogs((prev) => [...prev, `${timestamp} Founder Score → ${evt.value}`]);
+            }
+
+            if (evt.type === 'run_done') {
+              toast.success('Memo generated — decision stage complete.');
+              setIsDeciding(false);
+              fetchData();
+            } else if (evt.type === 'run_error') {
+              toast.error(evt.message || 'Memo generation failed.');
+              setIsDeciding(false);
+            }
+          } catch {
+            // parse issue
+          }
+        }
+      }
+    } catch (err: any) {
+      toast.error(err?.message || 'Error occurred during memo generation.');
+      setIsDeciding(false);
+    }
+  };
+
   const runScreening = async () => {
     if (isScreening) return;
     setIsScreening(true);
@@ -279,6 +338,7 @@ export default function FounderProfile() {
         return 1;
       case 'screened':
       case 'diligence':
+      case 'diligenced':
         return 2;
       case 'decided':
         return 3;
@@ -426,6 +486,17 @@ export default function FounderProfile() {
               >
                 <ShieldAlert className="h-4 w-4" />
                 Run Diligence
+              </button>
+            )}
+
+            {(app.status === 'diligenced' || app.status === 'decided') && !isDeciding && (
+              <button
+                onClick={runDecision}
+                disabled={app.status === 'decided'}
+                className="flex items-center gap-2 px-4 py-2 bg-action hover:bg-action/90 text-white font-medium rounded-lg text-sm transition-all cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
+              >
+                <FileText className="h-4 w-4" />
+                {app.status === 'decided' ? 'Memo Generated' : 'Generate Memo'}
               </button>
             )}
           </div>
