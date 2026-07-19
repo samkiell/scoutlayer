@@ -102,18 +102,35 @@ export async function GET(req: Request) {
       return NextResponse.json({ success: true, applications: joinedApplications });
     } else if (role === 'founder') {
       const foundersCollection = db.collection('founders');
-      const founder = await foundersCollection.findOne({ userId: user._id.toString() });
+      const userFounders = await foundersCollection
+        .find({ userId: user._id.toString() })
+        .project({ _id: 1 })
+        .toArray();
+      const userFounderIds = userFounders.map((f: any) => f._id.toString());
 
-      if (!founder) {
-        return NextResponse.json({ success: true, hasApplied: false });
+      if (userFounderIds.length === 0) {
+        return NextResponse.json({ success: true, hasApplied: false, hasActiveApplication: false });
       }
 
       const applicationsCollection = db.collection('applications');
-      const application = await applicationsCollection.findOne({ founderId: founder._id.toString() });
+      const ACTIVE_STATUSES = ['sourced', 'screening', 'screened', 'diligence', 'diligenced'];
+
+      // Most recent application (by createdAt desc) — handles multiple 'decided' over time.
+      const applications = await applicationsCollection
+        .find({ founderId: { $in: userFounderIds } })
+        .sort({ createdAt: -1 })
+        .toArray();
+      const application = applications[0] ?? null;
+      const hasActiveApplication = applications.some((a: any) => ACTIVE_STATUSES.includes(a.status));
+      const founder = await foundersCollection.findOne(
+        { _id: new (require('mongodb').ObjectId)(application ? application.founderId : userFounderIds[0]) },
+        { projection: { founderScore: 1, name: 1, company: 1, structuredProfile: 1 } } as any
+      );
 
       return NextResponse.json({
         success: true,
         hasApplied: !!application,
+        hasActiveApplication,
         application,
         founder,
       });
@@ -143,6 +160,35 @@ export async function POST(req: Request) {
 
     if (user.role !== 'founder') {
       return NextResponse.json({ success: false, error: 'Only founders can apply' }, { status: 403 });
+    }
+
+    // Enforce a single active application per founder.
+    // A founder may have multiple 'decided' applications over time, but only one
+    // application may be in-flight (not yet decided) at any moment.
+    const foundersCol = db.collection('founders');
+    const applicationsCol = db.collection('applications');
+    const userFounders = await foundersCol
+      .find({ userId: user._id.toString() })
+      .project({ _id: 1 })
+      .toArray();
+    const userFounderIds = userFounders.map((f: any) => f._id.toString());
+
+    if (userFounderIds.length > 0) {
+      const ACTIVE_STATUSES = ['sourced', 'screening', 'screened', 'diligence', 'diligenced'];
+      const activeApplication = await applicationsCol.findOne({
+        founderId: { $in: userFounderIds },
+        status: { $in: ACTIVE_STATUSES },
+      });
+      if (activeApplication) {
+        return NextResponse.json(
+          {
+            success: false,
+            error: 'You already have an active application in progress',
+            applicationId: activeApplication._id.toString(),
+          },
+          { status: 409 }
+        );
+      }
     }
 
     const body = await req.json();
@@ -252,7 +298,6 @@ export async function POST(req: Request) {
     }
 
     // Write founder doc
-    const foundersCol = db.collection('founders');
     const founderDoc = {
       userId: user._id.toString(),
       githubUsername: githubUsername || undefined,
@@ -273,7 +318,6 @@ export async function POST(req: Request) {
     const founderId = founderInsert.insertedId.toString();
 
     // Write application doc
-    const applicationsCol = db.collection('applications');
     const applicationDoc = {
       founderId,
       deck: deckUrl,

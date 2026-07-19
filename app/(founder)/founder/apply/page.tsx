@@ -3,15 +3,18 @@
 
 import React, { useState, useEffect } from 'react';
 import Navbar from '@/components/Navbar';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
-import { ArrowLeft, Loader2 } from 'lucide-react';
+import { ArrowLeft, Loader2, ShieldAlert } from 'lucide-react';
 import { toast } from 'sonner';
 
 export default function FounderApply() {
   const { data: session, status } = useSession();
   const router = useRouter();
   const [loading, setLoading] = useState(false);
+  const [checking, setChecking] = useState(true);
+  const [hasActiveApplication, setHasActiveApplication] = useState(false);
   const [form, setForm] = useState({
     companyName: '',
     deckUrl: '',
@@ -28,7 +31,18 @@ export default function FounderApply() {
       const role = (session?.user as any)?.role;
       if (role !== 'founder') {
         router.push(role === 'investor' ? '/investor/dashboard' : '/role-select');
+        return;
       }
+      // Check whether this founder already has an active (in-progress) application.
+      fetch('/api/applications')
+        .then((res) => res.json())
+        .then((data) => {
+          if (data.success) setHasActiveApplication(!!data.hasActiveApplication);
+        })
+        .catch(() => {})
+        .finally(() => setChecking(false));
+    } else {
+      setChecking(false);
     }
   }, [session, status, router]);
 
@@ -91,10 +105,48 @@ export default function FounderApply() {
     }
   };
 
-  if (status === 'loading') {
+  if (status === 'loading' || checking) {
     return (
       <div className="flex-1 flex flex-col items-center justify-center bg-bg text-text min-h-screen">
         <Loader2 className="h-8 w-8 animate-spin text-action" />
+      </div>
+    );
+  }
+
+  // Already have an in-progress application — block the form.
+  if (hasActiveApplication) {
+    return (
+      <div className="flex-1 flex flex-col bg-bg text-text min-h-screen">
+        <Navbar />
+        <main className="flex-1 max-w-2xl w-full mx-auto px-6 py-16 flex flex-col gap-10">
+          <div>
+            <button
+              onClick={() => router.back()}
+              className="flex items-center gap-2 text-sm text-text-muted hover:text-text transition-colors mb-8"
+            >
+              <ArrowLeft className="h-4 w-4" />
+              Back
+            </button>
+            <h1 className="font-display text-3xl font-bold tracking-tight">Apply to ScoutLayer</h1>
+          </div>
+
+          <div className="bg-surface border border-border rounded-2xl p-10 flex flex-col items-center text-center gap-4">
+            <div className="p-4 bg-flag/10 rounded-2xl text-flag">
+              <ShieldAlert className="h-8 w-8" />
+            </div>
+            <h2 className="font-display text-xl font-bold text-text">You have an active application in progress</h2>
+            <p className="text-text-muted text-sm max-w-md">
+              You can only have one application in the pipeline at a time. Check its current status
+              on your founder dashboard.
+            </p>
+            <Link
+              href="/founder/dashboard"
+              className="flex items-center gap-2 px-5 py-3 bg-action hover:bg-action/90 text-white font-semibold rounded-xl text-sm transition-all cursor-pointer mt-2"
+            >
+              View Application Status
+            </Link>
+          </div>
+        </main>
       </div>
     );
   }
