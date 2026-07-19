@@ -29,10 +29,9 @@ export const authOptions: NextAuthOptions = {
           let roleIntent: string | undefined;
           try {
             const { cookies } = require('next/headers');
-            const cookieStore = cookies();
-            // Handle Next.js 16 async cookieStore if needed, or check both async/sync methods
-            const resolvedCookieStore = typeof cookieStore.then === 'function' ? await cookieStore : cookieStore;
-            roleIntent = resolvedCookieStore.get('scoutlayer_role_intent')?.value;
+            const cookieStore = await cookies();
+            const cookie = cookieStore.get('scoutlayer_role_intent');
+            roleIntent = cookie?.value;
           } catch (e) {
             console.error('Error reading cookies in NextAuth signIn callback:', e);
           }
@@ -62,7 +61,9 @@ export const authOptions: NextAuthOptions = {
           const usersCollection = db.collection('users');
           const dbUser = await usersCollection.findOne({ email: token.email });
           if (dbUser) {
-            token.role = dbUser.role;
+            if (dbUser.role) {
+              token.role = dbUser.role;
+            }
             token.userId = dbUser._id.toString();
           }
         } catch (error) {

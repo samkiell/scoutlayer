@@ -114,18 +114,35 @@ export async function* runScreeningAgent(
   yield { type: 'run_start', message: 'Initiating 3-axis screening agent' };
   await appendLog('3-axis screening agent initiated');
 
+  // ── Gather BOTH GitHub profile AND application data ─────────────────────
   const profile = founder.structuredProfile || {};
-  const profileSummary = JSON.stringify({
-    name: founder.name,
-    company: founder.company,
-    oneLiner: profile.oneLiner,
-    description: profile.description,
-    sectors: profile.sectors,
-    location: profile.location,
-    followers: profile.followers,
-    publicRepos: profile.publicRepos,
-    coldStart: profile.coldStart,
-    topRepos: profile.topRepos,
+  const companyInfo = application.companyInfo || {};
+  const deckUrl: string | undefined = application.deck;
+
+  const contextPayload = JSON.stringify({
+    // Application data (founder-submitted)
+    application: {
+      companyName: companyInfo.name || null,
+      oneLinerPitch: companyInfo.oneLiner || null,
+      companyDescription: companyInfo.description || null,
+      deckUrl: deckUrl || null,
+      deckNote: deckUrl
+        ? 'A pitch deck link was provided but its contents have NOT been fetched or analyzed — only the URL is available.'
+        : 'No pitch deck was submitted.',
+    },
+    // GitHub / structured profile data
+    github: {
+      name: founder.name,
+      company: founder.company,
+      oneLiner: profile.oneLiner,
+      description: profile.description,
+      sectors: profile.sectors,
+      location: profile.location,
+      followers: profile.followers,
+      publicRepos: profile.publicRepos,
+      coldStart: profile.coldStart,
+      topRepos: profile.topRepos,
+    },
   });
 
   try {
@@ -134,15 +151,19 @@ export async function* runScreeningAgent(
     await appendLog('Analyzing founder signals...');
 
     const founderSystemPrompt = `You are a venture capital investment screening agent.
-Analyze the provided founder profile and evaluate their strength on the "Founder" axis.
-Consider repo activity, followers, background details (if bio or company is present), and cold-start status.
+You will receive two data sources: (1) the founder's APPLICATION data — company name, one-liner pitch, company description, and deck link, and (2) their GITHUB profile signals — repos, followers, bio, etc.
+Evaluate the founder's strength on the "Founder" axis by combining BOTH sources:
+- Application signals: quality of the pitch, clarity of the company vision, background implied by the submission.
+- GitHub signals: repo activity, followers, language breadth, cold-start status.
+Weight the application data heavily — a founder who submitted a clear company name and pitch should NOT be penalized for sparse GitHub activity.
+If a deck URL is present but contents were not analyzed, note that in your rationale but do not penalize.
 Provide your response strictly in the following JSON format:
 {
   "score": <number between 0 and 100>,
-  "rationale": "<one-line concise rationale explaining the score based on profile signals>"
+  "rationale": "<one-line concise rationale explaining the score based on BOTH application and GitHub signals>"
 }`;
 
-    const founderResultRaw = await callGroqWithFallback(founderSystemPrompt, profileSummary);
+    const founderResultRaw = await callGroqWithFallback(founderSystemPrompt, contextPayload);
     const founderResult = JSON.parse(founderResultRaw);
     const founderScore = Math.max(0, Math.min(100, Number(founderResult.score) || 0));
     const founderEvidence = founderResult.rationale || 'Limited founder signals available.';
@@ -160,15 +181,19 @@ Provide your response strictly in the following JSON format:
     await appendLog('Analyzing market space...');
 
     const marketSystemPrompt = `You are a venture capital investment screening agent.
-Analyze the provided founder profile. Since we do not have direct market reports, reason from the founder's repo descriptions and topics/languages as a proxy for the space/market they operate in.
-State explicitly in the rationale that this is a lightweight signal based on developer footprint, not deep market research.
+You will receive two data sources: (1) the founder's APPLICATION data — company name, one-liner pitch, company description, and deck link, and (2) their GITHUB profile signals.
+Analyze the market the founder is targeting by combining BOTH sources:
+- Application signals: the company description and one-liner pitch are the PRIMARY indicators of the market/space.
+- GitHub signals: repo descriptions, topics, and languages serve as SECONDARY proxies for technical market alignment.
+If the application provides a clear company description and pitch, use those as the primary basis for market assessment — do NOT fall back to GitHub-only reasoning.
+State explicitly whether market assessment is based on application data, GitHub proxy signals, or both.
 Provide your response strictly in the following JSON format:
 {
   "score": <number between 0 and 100>,
-  "rationale": "<one-line concise rationale explaining the score, explicitly noting this is a lightweight signal proxy>"
+  "rationale": "<one-line concise rationale explaining the score, noting which data sources informed the assessment>"
 }`;
 
-    const marketResultRaw = await callGroqWithFallback(marketSystemPrompt, profileSummary);
+    const marketResultRaw = await callGroqWithFallback(marketSystemPrompt, contextPayload);
     const marketResult = JSON.parse(marketResultRaw);
     const marketScore = Math.max(0, Math.min(100, Number(marketResult.score) || 0));
     const marketEvidence = marketResult.rationale || 'Lightweight signal proxy evaluation complete.';
@@ -186,14 +211,19 @@ Provide your response strictly in the following JSON format:
     await appendLog('Analyzing Idea vs Market fit...');
 
     const ideaSystemPrompt = `You are a venture capital investment screening agent.
-Analyze the provided founder profile and company description/repos. Evaluate the "Idea vs Market" axis: does the specific project or product description fit the inferred developer/tech market, or is it a stretch? Is there pivot potential?
+You will receive two data sources: (1) the founder's APPLICATION data — company name, one-liner pitch, company description, and deck link, and (2) their GITHUB profile signals.
+Evaluate the "Idea vs Market" axis by combining BOTH sources:
+- The company name, one-liner pitch, and description from the APPLICATION are the PRIMARY indicators of the idea.
+- GitHub repos and topics provide SECONDARY signals about technical capability and market alignment.
+Assess: does the submitted idea/product description fit the market? Is there pivot potential? Is the pitch clear and compelling?
+Do NOT describe the idea as "vague" if a clear company name and pitch were provided in the application data.
 Provide your response strictly in the following JSON format:
 {
   "score": <number between 0 and 100>,
-  "rationale": "<one-line concise rationale explaining the score and pivot potential>"
+  "rationale": "<one-line concise rationale explaining the score and pivot potential, referencing the submitted pitch>"
 }`;
 
-    const ideaResultRaw = await callGroqWithFallback(ideaSystemPrompt, profileSummary);
+    const ideaResultRaw = await callGroqWithFallback(ideaSystemPrompt, contextPayload);
     const ideaResult = JSON.parse(ideaResultRaw);
     const ideaScore = Math.max(0, Math.min(100, Number(ideaResult.score) || 0));
     const ideaEvidence = ideaResult.rationale || 'Evaluation of product-market thesis complete.';

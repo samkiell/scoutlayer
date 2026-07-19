@@ -12,6 +12,15 @@ export default function RoleSelect() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
 
+  useEffect(() => {
+    const role = (session?.user as any)?.role;
+    if (role === 'founder') {
+      router.replace('/founder/dashboard');
+    } else if (role === 'investor') {
+      router.replace('/investor/dashboard');
+    }
+  }, [session, router]);
+
   const selectRole = async (role: 'founder' | 'investor') => {
     setLoading(true);
     try {
