@@ -6,7 +6,7 @@ import Navbar from '@/components/Navbar';
 import PipelineStepper from '@/components/PipelineStepper';
 import EvidenceReceipt from '@/components/EvidenceReceipt';
 import { useRouter, useParams } from 'next/navigation';
-import { ArrowLeft, Award, TrendingUp, TrendingDown, Minus, Play, Loader2, Code2, ShieldAlert, FileText } from 'lucide-react';
+import { ArrowLeft, Award, TrendingUp, TrendingDown, Minus, Play, Loader2, Code2, ShieldAlert, FileText, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface AxisScore {
@@ -81,6 +81,32 @@ export default function FounderProfile() {
   const [isDeciding, setIsDeciding] = useState(false);
   const [logs, setLogs] = useState<string[]>([]);
   const logTerminalRef = useRef<HTMLDivElement>(null);
+
+  // Delete states
+  const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
+  const [deletingInProgress, setDeletingInProgress] = useState(false);
+
+  const confirmDelete = async () => {
+    if (!founder || !founder.id) return;
+    setDeletingInProgress(true);
+    try {
+      const res = await fetch(`/api/founders/${founder.id}`, {
+        method: 'DELETE',
+      });
+      const data = await res.json();
+      if (data.success) {
+        toast.success("Removed");
+        router.push('/investor/scout');
+      } else {
+        toast.error(data.error || "Failed to remove founder");
+      }
+    } catch (err: any) {
+      toast.error(err?.message || "Failed to remove founder");
+    } finally {
+      setDeletingInProgress(false);
+      setIsDeleteConfirmOpen(false);
+    }
+  };
 
   const fetchData = async () => {
     try {
@@ -389,6 +415,15 @@ export default function FounderProfile() {
                 }`}>
                   {founder.source}
                 </span>
+                {founder.source === 'outbound' && (
+                  <button
+                    onClick={() => setIsDeleteConfirmOpen(true)}
+                    title="Delete outbound founder"
+                    className="text-text-muted hover:text-flag transition-colors cursor-pointer p-1"
+                  >
+                    <Trash2 className="h-5 w-5" />
+                  </button>
+                )}
               </div>
               <p className="text-action text-lg font-medium mt-1">{founder.company}</p>
               <p className="text-text-muted text-sm mt-1 max-w-2xl">{founder.structuredProfile?.oneLiner}</p>
@@ -637,6 +672,43 @@ export default function FounderProfile() {
           </section>
         )}
       </main>
+
+      {/* Confirmation Modal */}
+      {isDeleteConfirmOpen && founder && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-bg/85 backdrop-blur-sm">
+          <div className="w-full max-w-md bg-surface border border-border rounded-2xl p-6 shadow-2xl animate-in fade-in zoom-in duration-200">
+            <h3 className="font-display text-lg font-bold text-text mb-2">Confirm Removal</h3>
+            <p className="text-sm text-text-muted mb-6 leading-relaxed">
+              Remove <strong className="text-text">{founder.name} ({founder.company})</strong> from your scouted list? This deletes all screening and diligence data for them. This can't be undone.
+            </p>
+            <div className="flex justify-end gap-3">
+              <button
+                type="button"
+                disabled={deletingInProgress}
+                onClick={() => setIsDeleteConfirmOpen(false)}
+                className="px-4 py-2 text-xs font-semibold rounded-lg bg-bg border border-border text-text hover:bg-surface transition-colors cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                disabled={deletingInProgress}
+                onClick={confirmDelete}
+                className="px-4 py-2 text-xs font-semibold rounded-lg bg-flag hover:bg-flag/90 text-white transition-colors cursor-pointer flex items-center gap-1.5"
+              >
+                {deletingInProgress ? (
+                  <>
+                    <Loader2 className="h-3 w-3 animate-spin" />
+                    Deleting…
+                  </>
+                ) : (
+                  'Delete'
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

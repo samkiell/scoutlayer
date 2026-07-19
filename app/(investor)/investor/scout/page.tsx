@@ -2,7 +2,6 @@
 
 import React, { useState, useRef, useCallback, useEffect } from 'react';
 import Navbar from '@/components/Navbar';
-import PipelineStepper from '@/components/PipelineStepper';
 import { useRouter } from 'next/navigation';
 import {
   ArrowLeft,
@@ -16,6 +15,7 @@ import {
   Calendar,
   ExternalLink,
   Search,
+  Trash2,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -62,6 +62,7 @@ export default function ScoutPage() {
   // ── Persisted pipeline: this investor's outbound + all inbound ─────────────
   interface PipelineItem {
     id: string;
+    founderId?: string | null;
     name: string;
     company: string;
     githubUsername?: string | null;
@@ -73,6 +74,39 @@ export default function ScoutPage() {
   const [search, setSearch] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [loadingPipeline, setLoadingPipeline] = useState(true);
+
+  // Delete modal states
+  const [deletingFounder, setDeletingFounder] = useState<PipelineItem | null>(null);
+  const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
+  const [deletingInProgress, setDeletingInProgress] = useState(false);
+
+  const handleDeleteClick = (item: PipelineItem) => {
+    setDeletingFounder(item);
+    setIsDeleteConfirmOpen(true);
+  };
+
+  const confirmDelete = async () => {
+    if (!deletingFounder || !deletingFounder.founderId) return;
+    setDeletingInProgress(true);
+    try {
+      const res = await fetch(`/api/founders/${deletingFounder.founderId}`, {
+        method: 'DELETE',
+      });
+      const data = await res.json();
+      if (data.success) {
+        toast.success("Removed");
+        setPipeline((prev) => prev.filter((item) => item.founderId !== deletingFounder.founderId));
+      } else {
+        toast.error(data.error || "Failed to remove founder");
+      }
+    } catch (err: any) {
+      toast.error(err?.message || "Failed to remove founder");
+    } finally {
+      setDeletingInProgress(false);
+      setIsDeleteConfirmOpen(false);
+      setDeletingFounder(null);
+    }
+  };
 
   // Fetch the combined, correctly-scoped pipeline list.
   const loadPipeline = useCallback(async () => {
@@ -118,14 +152,18 @@ export default function ScoutPage() {
     }, 50);
   }, []);
 
+  const addKeyword = (kw: string) => {
+    if (kw && !keywords.includes(kw)) {
+      setKeywords((prev) => [...prev, kw]);
+    }
+  };
+
   // ── Add keyword on Enter or comma ─────────────────────────────────────────
   const handleKeywordKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter' || e.key === ',') {
       e.preventDefault();
       const kw = keywordInput.trim().replace(/,+$/, '');
-      if (kw && !keywords.includes(kw)) {
-        setKeywords((prev) => [...prev, kw]);
-      }
+      addKeyword(kw);
       setKeywordInput('');
     }
   };
@@ -254,7 +292,7 @@ export default function ScoutPage() {
         <div>
           <button
             onClick={() => router.back()}
-            className="flex items-center gap-2 text-sm text-text-muted hover:text-text transition-colors mb-6"
+            className="flex items-center gap-2 text-sm text-text-muted hover:text-text transition-colors mb-6 cursor-pointer"
           >
             <ArrowLeft className="h-4 w-4" />
             Back
@@ -265,15 +303,10 @@ export default function ScoutPage() {
           </p>
         </div>
 
-        {/* Pipeline stepper — Sourcing is stage 0 */}
-        <PipelineStepper
-          stages={[
-            { label: 'Sourcing', status: isDone ? 'done' : isRunning ? 'active' : 'pending' },
-            { label: 'Screening', status: 'pending' },
-            { label: 'Diligence', status: 'pending' },
-            { label: 'Decision', status: 'pending' },
-          ]}
-        />
+        {/* Static label anchor replacing 4-stage pipeline stepper */}
+        <div className="text-sm text-text-muted font-medium">
+          Stage 1 of 4 — Sourcing
+        </div>
 
         {/* Thesis form */}
         <form
@@ -295,7 +328,7 @@ export default function ScoutPage() {
                   <button
                     type="button"
                     onClick={() => removeKeyword(kw)}
-                    className="hover:text-white transition-colors"
+                    className="hover:text-white transition-colors cursor-pointer"
                   >
                     <X className="h-3 w-3" />
                   </button>
@@ -311,6 +344,23 @@ export default function ScoutPage() {
                 disabled={isRunning}
               />
             </div>
+
+            {/* Suggested Keyword Chips */}
+            <div className="flex flex-wrap gap-2 items-center mt-1">
+              <span className="text-xs text-text-muted mr-1">Suggestions:</span>
+              {['ai agent', 'dev tools', 'fintech infra', 'llm', 'developer productivity'].map((suggested) => (
+                <button
+                  key={suggested}
+                  type="button"
+                  onClick={() => addKeyword(suggested)}
+                  disabled={isRunning || keywords.includes(suggested)}
+                  className="text-xs px-3 py-1.5 rounded-full bg-surface border border-border text-text hover:bg-action/15 hover:text-action disabled:opacity-40 disabled:cursor-not-allowed transition-all cursor-pointer"
+                >
+                  {suggested}
+                </button>
+              ))}
+            </div>
+
             <p className="text-xs text-text-muted">Press Enter or comma to add each keyword</p>
           </div>
 
@@ -341,29 +391,45 @@ export default function ScoutPage() {
                 value={createdAfter}
                 onChange={(e) => setCreatedAfter(e.target.value)}
                 disabled={isRunning}
-                className="bg-bg border border-border rounded-xl px-4 py-3 text-sm text-text transition-colors"
+                className="bg-bg border border-border rounded-xl px-4 py-3 text-sm text-text transition-colors w-full focus:border-action outline-none [&::-webkit-calendar-picker-indicator]:invert [&::-webkit-calendar-picker-indicator]:opacity-50 hover:[&::-webkit-calendar-picker-indicator]:opacity-100 cursor-pointer"
               />
             </div>
           </div>
 
-          <button
-            type="submit"
-            disabled={isRunning || keywords.length === 0}
-            id="run-scout-btn"
-            className="w-full flex items-center justify-center gap-2 px-5 py-4 bg-action hover:bg-action/90 disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold rounded-xl text-sm transition-all mt-2"
-          >
-            {isRunning ? (
-              <>
-                <Loader2 className="h-4 w-4 animate-spin" />
-                Scout Running…
-              </>
-            ) : (
-              <>
-                <Compass className="h-4 w-4" />
-                Run Scout
-              </>
+          <div className="w-full">
+            <button
+              type="submit"
+              disabled={isRunning || keywords.length === 0}
+              id="run-scout-btn"
+              className={`w-full flex items-center justify-center gap-2 px-5 py-4 font-semibold rounded-xl text-sm transition-all text-white ${
+                isRunning
+                  ? 'bg-action/70 cursor-wait'
+                  : keywords.length === 0
+                  ? 'bg-action opacity-40 cursor-not-allowed'
+                  : 'bg-action hover:bg-action/90 cursor-pointer'
+              }`}
+            >
+              {isRunning ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Scout Running…
+                </>
+              ) : (
+                <>
+                  <Compass className="h-4 w-4" />
+                  Run Scout
+                </>
+              )}
+            </button>
+            {keywords.length === 0 && !isRunning && (
+              <p className="text-xs text-text-muted text-center mt-2">
+                Add at least one keyword to run a scout
+              </p>
             )}
-          </button>
+            <p className="text-xs text-text-muted text-center mt-3">
+              Searches GitHub for matching repositories. Returns up to 15 new candidates per run.
+            </p>
+          </div>
         </form>
 
         {/* Live event log */}
@@ -485,6 +551,15 @@ export default function ScoutPage() {
                     >
                       View
                     </button>
+                    {item.source === 'outbound' && (
+                      <button
+                        onClick={() => handleDeleteClick(item)}
+                        title="Delete outbound founder"
+                        className="text-text-muted hover:text-flag transition-colors cursor-pointer min-h-[44px] min-w-[44px] flex items-center justify-center"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    )}
                   </div>
                 </div>
               ))}
@@ -500,6 +575,46 @@ export default function ScoutPage() {
           </div>
         )}
       </main>
+
+      {/* Confirmation Modal */}
+      {isDeleteConfirmOpen && deletingFounder && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-bg/85 backdrop-blur-sm">
+          <div className="w-full max-w-md bg-surface border border-border rounded-2xl p-6 shadow-2xl animate-in fade-in zoom-in duration-200">
+            <h3 className="font-display text-lg font-bold text-text mb-2">Confirm Removal</h3>
+            <p className="text-sm text-text-muted mb-6 leading-relaxed">
+              Remove <strong className="text-text">{deletingFounder.name} ({deletingFounder.company})</strong> from your scouted list? This deletes all screening and diligence data for them. This can't be undone.
+            </p>
+            <div className="flex justify-end gap-3">
+              <button
+                type="button"
+                disabled={deletingInProgress}
+                onClick={() => {
+                  setIsDeleteConfirmOpen(false);
+                  setDeletingFounder(null);
+                }}
+                className="px-4 py-2 text-xs font-semibold rounded-lg bg-bg border border-border text-text hover:bg-surface transition-colors cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                disabled={deletingInProgress}
+                onClick={confirmDelete}
+                className="px-4 py-2 text-xs font-semibold rounded-lg bg-flag hover:bg-flag/90 text-white transition-colors cursor-pointer flex items-center gap-1.5"
+              >
+                {deletingInProgress ? (
+                  <>
+                    <Loader2 className="h-3 w-3 animate-spin" />
+                    Deleting…
+                  </>
+                ) : (
+                  'Delete'
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

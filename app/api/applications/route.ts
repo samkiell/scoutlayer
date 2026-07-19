@@ -90,6 +90,7 @@ export async function GET(req: Request) {
 
       const joinedApplications = applications.map((app: any) => ({
         id: app._id.toString(),
+        founderId: app.founder?._id?.toString() || null,
         name: app.founder?.name || app.companyInfo?.name || 'Unknown Founder',
         company: app.companyInfo?.name || app.founder?.company || 'Unknown Company',
         githubUsername: app.founder?.githubUsername || null,
