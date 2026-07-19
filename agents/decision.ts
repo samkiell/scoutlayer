@@ -252,14 +252,8 @@ export async function* runDecisionAgent(
       url: r.url,
     }));
 
-    const deckText = truncateDeckText(
-      application.deckText ||
-      application.deckContent ||
-      application.deck_content ||
-      application.deck_text ||
-      application.companyInfo?.deckText ||
-      application.companyInfo?.deckContent
-    );
+    const deckExtract = await extractDeckText(application.deck);
+    const deckText = truncateDeckText(deckExtract.analyzed ? deckExtract.text : null);
 
     const truncatedBio = truncateLongField(profile.bio || profile.description);
     const truncatedAdditionalContext = truncateLongField(
@@ -280,6 +274,14 @@ export async function* runDecisionAgent(
       publicRepos: safeNum(profile.publicRepos),
       githubUrl: profile.githubUrl,
       topRepos: top5Repos,
+      deck: application.deck
+        ? {
+            url: application.deck,
+            analyzed: deckExtract.analyzed,
+            reason: deckExtract.reason,
+            text: deckText || undefined,
+          }
+        : undefined,
       companyInfo: application?.companyInfo ? {
         ...application.companyInfo,
         description: truncatedAdditionalContext,
@@ -323,6 +325,9 @@ CRITICAL CONSTRAINTS:
 - When writing SWOT, cite specific trustClaims or screening rationales where relevant.
 - For Traction & KPIs, only use real signals: GitHub stars, followers, repo activity that are
   present in the context. If none are present, state "No traction data available".
+- If deck content was provided in the context, use it to enrich Problem & Product and
+  Company Snapshot. If deck content was NOT provided or could not be analyzed, you MUST
+  explicitly disclose this in the memo text and add it to gapsFlagged.
 
 Return STRICTLY a JSON object with exactly these keys (do not add other sections):
 {
@@ -345,6 +350,14 @@ Return STRICTLY a JSON object with exactly these keys (do not add other sections
     const memoRaw = await callGroqWithFallback(systemPrompt, JSON.stringify(context, null, 2), appendLog);
     const memoResult = JSON.parse(memoRaw);
 
+    const gapsFlagged = Array.isArray(memoResult.gapsFlagged) ? memoResult.gapsFlagged.map(String) : [];
+    if (application.deck && !deckExtract.analyzed) {
+      const disclosure = `Deck link provided but contents not analyzed — ${deckExtract.reason}`;
+      if (!gapsFlagged.some((g) => g.toLowerCase().includes('deck'))) {
+        gapsFlagged.push(disclosure);
+      }
+    }
+
     const memoDoc: Omit<Memo, '_id'> = {
       applicationId,
       companySnapshot: String(memoResult.companySnapshot || '').trim(),
@@ -357,7 +370,7 @@ Return STRICTLY a JSON object with exactly these keys (do not add other sections
       },
       problemProduct: String(memoResult.problemProduct || '').trim(),
       tractionKpis: String(memoResult.tractionKpis || '').trim(),
-      gapsFlagged: Array.isArray(memoResult.gapsFlagged) ? memoResult.gapsFlagged.map(String) : [],
+      gapsFlagged,
       createdAt: new Date(),
     };
 
