@@ -9,6 +9,8 @@ export interface User {
 export interface Founder {
   _id: string;
   userId?: string;
+  /** Set on outbound (scouted) founders to the investor who ran the scout. Inbound founders do NOT get this. */
+  sourcedByInvestorId?: string;
   githubUsername?: string; // used for deduplication on outbound sourcing
   name: string;
   company: string;

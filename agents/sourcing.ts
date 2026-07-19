@@ -42,7 +42,8 @@ export interface SourcingResult {
 /** Main entry point — call this from the API route. Yields events via an async generator. */
 export async function* runSourcingAgent(
   thesis: Thesis,
-  options: SourcingOptions = {}
+  options: SourcingOptions = {},
+  investorId?: string
 ): AsyncGenerator<SourcingEvent, SourcingResult, unknown> {
   const cap = options.candidateCap ?? 15;
   const client = await clientPromise;
@@ -251,6 +252,9 @@ export async function* runSourcingAgent(
         company: profile.company?.replace('@', '').trim() ?? '',
         source: 'outbound',
         channel: 'github',
+        // Tag the outbound founder with the sourcing investor so it is scoped to
+        // their pipeline only. Inbound founders (created via self-apply) never get this.
+        sourcedByInvestorId: investorId || undefined,
         rawSignals,
         structuredProfile,
         founderScore: {

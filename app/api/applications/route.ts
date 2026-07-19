@@ -49,25 +49,48 @@ export async function GET(req: Request) {
     const role = user.role;
 
     if (role === 'investor') {
-      // Return ALL applications joined with founder details
-      const applicationsCollection = db.collection('applications');
-      const applications = await applicationsCollection.find({}).toArray();
+      // Return this investor's pipeline: their outbound (scouted) founders + ALL
+      // inbound applications. Outbound founders are scoped to the sourcing investor
+      // via sourcedByInvestorId; inbound founders (self-applied) are visible to all.
+      // A $or query keeps inbound unfiltered while restricting outbound to this investor.
+      // Existing outbound founders created before sourcedByInvestorId existed have no
+      // such field and therefore match neither branch (orphaned) — see summary note.
 
-      const foundersCollection = db.collection('founders');
-      const joinedApplications = await Promise.all(
-        applications.map(async (app) => {
-          const founder = await foundersCollection.findOne({ _id: new (require('mongodb').ObjectId)(app.founderId) });
-          return {
-            id: app._id.toString(),
-            name: founder?.name || app.companyInfo?.name || 'Unknown Founder',
-            company: app.companyInfo?.name || founder?.company || 'Unknown Company',
-            source: founder?.source || 'inbound',
-            stage: app.status || 'sourced',
-            founderScore: founder?.founderScore?.value ?? null,
-            trustScore: null,
-          };
-        })
-      );
+      const applicationsCollection = db.collection('applications');
+      const applications = await applicationsCollection
+        .aggregate([
+          {
+            $lookup: {
+              from: 'founders',
+              localField: 'founderId',
+              foreignField: '_id',
+              as: 'founder',
+            },
+          },
+          { $unwind: { path: '$founder', preserveNullAndEmptyArrays: true } },
+          {
+            $match: {
+              $or: [
+                { 'founder.source': 'inbound' },
+                { 'founder.source': { $ne: 'outbound' } },
+                { 'founder.sourcedByInvestorId': user._id.toString() },
+              ],
+            },
+          },
+          { $sort: { createdAt: -1 } },
+        ])
+        .toArray();
+
+      const joinedApplications = applications.map((app: any) => ({
+        id: app._id.toString(),
+        name: app.founder?.name || app.companyInfo?.name || 'Unknown Founder',
+        company: app.companyInfo?.name || app.founder?.company || 'Unknown Company',
+        githubUsername: app.founder?.githubUsername || null,
+        source: app.founder?.source || 'inbound',
+        stage: app.status || 'sourced',
+        founderScore: app.founder?.founderScore?.value ?? null,
+        trustScore: null,
+      }));
 
       return NextResponse.json({ success: true, applications: joinedApplications });
     } else if (role === 'founder') {

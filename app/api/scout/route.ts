@@ -57,6 +57,9 @@ export async function POST(req: Request) {
   // ── 3. SSE stream ─────────────────────────────────────────────────────────
   const encoder = new TextEncoder();
 
+  // Capture the sourcing investor's ID so outbound founders can be scoped to them.
+  const investorId = (session.user as { id?: string } | undefined)?.id;
+
   const stream = new ReadableStream({
     async start(controller) {
       const emit = (event: object) => {
@@ -64,7 +67,7 @@ export async function POST(req: Request) {
       };
 
       try {
-        const generator = runSourcingAgent(thesis, { candidateCap: 15 });
+        const generator = runSourcingAgent(thesis, { candidateCap: 15 }, investorId);
 
         for await (const event of generator) {
           emit(event);
