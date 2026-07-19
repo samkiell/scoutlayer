@@ -111,7 +111,9 @@ export default function FounderDashboard() {
         return 0;
       case 'screening':
         return 1;
+      case 'screened':
       case 'diligence':
+      case 'diligenced':
         return 2;
       case 'decided':
         return 3;
