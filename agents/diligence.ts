@@ -365,7 +365,10 @@ Example format:
       const verifyResult = JSON.parse(verifyResponse.choices[0].message?.content || '{}');
       const confidence = typeof verifyResult.confidence === 'number' ? verifyResult.confidence : 0;
       const reasoning = verifyResult.reasoning || 'No reasoning provided.';
-      const evidenceUrl = verifyResult.evidenceUrl || undefined;
+      // Fall back to the top search result URL so SOURCE is never blank
+      const evidenceUrl: string | undefined =
+        verifyResult.evidenceUrl ||
+        (searchResults.length > 0 ? searchResults[0].url : undefined);
 
       const verifiedBy: TrustClaim['verifiedBy'] = searchResults.length > 0 && confidence >= 70 ? 'tavily' : 'unverified';
 
