@@ -4,6 +4,8 @@ export interface User {
   role?: 'founder' | 'investor';
   name?: string;
   createdAt: Date;
+  dismissedOnboarding?: boolean;
+  dismissedNextStepHints?: Record<string, boolean>;
 }
 
 export interface Founder {

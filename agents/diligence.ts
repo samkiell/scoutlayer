@@ -9,6 +9,7 @@ import clientPromise from '@/lib/db';
 import { ObjectId } from 'mongodb';
 import type { TrustClaim, StructuredProfile } from '@/types';
 import { extractDeckText } from '@/lib/sources/deck';
+import { computeTrustScore } from '@/lib/utils/trustScore';
 import { OpenAI } from 'openai';
 import {
   truncateRepoDescription,
@@ -119,9 +120,12 @@ export async function* runDiligenceAgent(
     updatedAt?: Date;
   }>('pipelineRuns');
 
-  const trustClaimsCol = db.collection<
-    Omit<TrustClaim, '_id'> & { _id?: any }
-  >('trustClaims');
+    const trustClaimsCol = db.collection<
+      Omit<TrustClaim, '_id'> & { _id?: any }
+    >('trustClaims');
+
+    // Collected across the run so we can persist an aggregate trustScore.
+    const collectedClaims: Array<Pick<TrustClaim, 'confidence' | 'verifiedBy'>> = [];
 
   const appObjectId = new ObjectId(applicationId);
   const application = await appsCol.findOne({ _id: appObjectId });

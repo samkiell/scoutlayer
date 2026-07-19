@@ -7,7 +7,7 @@ import PipelineStepper from '@/components/PipelineStepper';
 import EvidenceReceipt from '@/components/EvidenceReceipt';
 import MemoDownloadButton from '@/components/MemoDownloadButton';
 import { useRouter, useParams } from 'next/navigation';
-import { ArrowLeft, Award, TrendingUp, TrendingDown, Minus, Play, Loader2, Code2, ShieldAlert, FileText, Trash2 } from 'lucide-react';
+import { ArrowLeft, Award, TrendingUp, TrendingDown, Minus, Play, Loader2, Code2, ShieldAlert, FileText, Trash2, X } from 'lucide-react';
 import { toast } from 'sonner';
 
 const GithubIcon = (props: React.SVGProps<SVGSVGElement>) => (
