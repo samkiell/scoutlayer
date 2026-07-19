@@ -22,7 +22,7 @@ export default function NotFound() {
           href="/"
           className="inline-flex items-center justify-center font-display text-xs font-semibold uppercase tracking-wider bg-action hover:bg-action/90 text-text px-8 py-3 rounded transition duration-200 w-full"
         >
-          Return to Terminal
+          Return Home
         </Link>
       </div>
     </div>
