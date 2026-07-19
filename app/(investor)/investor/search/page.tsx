@@ -131,13 +131,16 @@ export default function SearchPage() {
                       <div className="min-w-0">
                         <div className="flex items-center gap-2 flex-wrap">
                           <h3 className="font-semibold text-text text-base">{founder.name}</h3>
-                          <span className={`text-[9px] font-data px-1.5 py-0.5 rounded border uppercase tracking-wider ${
-                            founder.source === 'inbound'
-                              ? 'bg-action/10 text-action border-action/20'
-                              : 'bg-trust/10 text-trust border-trust/20'
-                          }`}>
-                            {founder.source}
-                          </span>
+                          {founder.source === 'inbound' ? (
+                            <span className="text-[9px] font-data px-1.5 py-0.5 rounded border uppercase tracking-wider bg-action/10 text-action border-action/20">
+                              Inbound
+                            </span>
+                          ) : (
+                            <span className="text-[9px] font-data px-1.5 py-0.5 rounded border uppercase tracking-wider bg-surface text-text-muted border-border flex items-center gap-1 inline-flex">
+                              <Github className="h-3 w-3" />
+                              Sourced via GitHub
+                            </span>
+                          )}
                         </div>
                         <p className="text-sm text-text-muted mt-0.5">{founder.company}</p>
                         {founder.structuredProfile?.oneLiner && (

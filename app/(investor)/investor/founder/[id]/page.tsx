@@ -6,7 +6,7 @@ import Navbar from '@/components/Navbar';
 import PipelineStepper from '@/components/PipelineStepper';
 import EvidenceReceipt from '@/components/EvidenceReceipt';
 import { useRouter, useParams } from 'next/navigation';
-import { ArrowLeft, Award, TrendingUp, TrendingDown, Minus, Play, Loader2, Code2, ShieldAlert, FileText, Trash2 } from 'lucide-react';
+import { ArrowLeft, Award, TrendingUp, TrendingDown, Minus, Play, Loader2, Code2, ShieldAlert, FileText, Trash2, Github } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface AxisScore {
@@ -408,13 +408,16 @@ export default function FounderProfile() {
             <div>
               <div className="flex items-center gap-3">
                 <h1 className="font-display text-3xl font-bold tracking-tight">{founder.name}</h1>
-                <span className={`text-[10px] font-data px-2 py-0.5 rounded border uppercase tracking-wider ${
-                  founder.source === 'inbound' 
-                    ? 'bg-action/10 text-action border-action/20' 
-                    : 'bg-trust/10 text-trust border-trust/20'
-                }`}>
-                  {founder.source}
-                </span>
+                {founder.source === 'inbound' ? (
+                  <span className="text-[10px] font-data px-2 py-0.5 rounded border uppercase tracking-wider bg-action/10 text-action border-action/20">
+                    Inbound
+                  </span>
+                ) : (
+                  <span className="text-[10px] font-data px-2 py-0.5 rounded border uppercase tracking-wider bg-surface text-text-muted border-border flex items-center gap-1 inline-flex">
+                    <Github className="h-3.5 w-3.5" />
+                    Sourced via GitHub
+                  </span>
+                )}
                 {founder.source === 'outbound' && (
                   <button
                     onClick={() => setIsDeleteConfirmOpen(true)}
