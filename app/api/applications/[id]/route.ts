@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import clientPromise from '@/lib/db';
 import { ObjectId } from 'mongodb';
+import { deleteFounderCascade } from '@/lib/utils/deleteCascade';
 
 export async function GET(
   req: Request,
@@ -132,3 +133,61 @@ export async function GET(
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });
   }
 }
+
+export async function DELETE(
+  req: Request,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const session = await getServerSession(authOptions);
+    if (!session) {
+      return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const { id } = await params;
+    if (!id || !ObjectId.isValid(id)) {
+      return NextResponse.json({ success: false, error: 'Invalid application ID' }, { status: 400 });
+    }
+
+    const role = (session.user as { role?: string } | undefined)?.role;
+    const userId = (session.user as { id?: string } | undefined)?.id;
+
+    if (role !== 'founder') {
+      return NextResponse.json(
+        { success: false, error: 'Forbidden — founder role required to delete application' },
+        { status: 403 }
+      );
+    }
+
+    const client = await clientPromise;
+    const db = client.db();
+
+    // Fetch the application to check ownership
+    const app = await db.collection('applications').findOne({ _id: new ObjectId(id) });
+    if (!app) {
+      return NextResponse.json({ success: false, error: 'Application not found' }, { status: 404 });
+    }
+
+    // Fetch founder to check that it belongs to the logged in user
+    const founder = await db.collection('founders').findOne({ _id: new ObjectId(app.founderId) });
+    if (!founder) {
+      return NextResponse.json({ success: false, error: 'Founder record not found' }, { status: 404 });
+    }
+
+    const founderUserId = founder.userId ? founder.userId.toString() : undefined;
+    if (founderUserId !== userId) {
+      return NextResponse.json(
+        { success: false, error: 'Forbidden — you can only delete your own applications' },
+        { status: 403 }
+      );
+    }
+
+    // Cascade delete using shared utility
+    await deleteFounderCascade(db, app.founderId);
+
+    return NextResponse.json({ success: true, message: 'Application deleted successfully' });
+  } catch (error: any) {
+    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+  }
+}
+

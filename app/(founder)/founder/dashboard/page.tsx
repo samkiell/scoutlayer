@@ -6,8 +6,9 @@ import Navbar from '@/components/Navbar';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
-import { FileText, PlusCircle, Award, Activity, Loader2, ExternalLink } from 'lucide-react';
+import { FileText, PlusCircle, Award, Activity, Loader2, ExternalLink, Trash2 } from 'lucide-react';
 import PipelineStepper from '@/components/PipelineStepper';
+import { toast } from 'sonner';
 
 export default function FounderDashboard() {
   const { data: session, status } = useSession();
@@ -17,8 +18,53 @@ export default function FounderDashboard() {
     hasApplied: boolean;
     hasActiveApplication?: boolean;
     application?: any;
+    applications?: any[];
     founder?: any;
   } | null>(null);
+
+  const [deletingApp, setDeletingApp] = useState<any | null>(null);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [deletingInProgress, setDeletingInProgress] = useState(false);
+
+  const confirmDeleteApp = async () => {
+    if (!deletingApp) return;
+    setDeletingInProgress(true);
+    try {
+      const res = await fetch(`/api/applications/${deletingApp._id}`, {
+        method: 'DELETE',
+      });
+      const data = await res.json();
+      if (data.success) {
+        toast.success("Application deleted");
+        const reloadRes = await fetch('/api/applications');
+        const reloadData = await reloadRes.json();
+        if (reloadData.success) {
+          setAppData(reloadData);
+        } else {
+          setAppData((prev) => {
+            if (!prev) return null;
+            const filtered = (prev.applications || []).filter((a: any) => a._id !== deletingApp._id);
+            const nextApp = filtered[0] ?? null;
+            return {
+              ...prev,
+              hasApplied: filtered.length > 0,
+              hasActiveApplication: filtered.some((a: any) => ['sourced', 'screening', 'screened', 'diligence', 'diligenced'].includes(a.status)),
+              application: nextApp,
+              applications: filtered,
+            };
+          });
+        }
+      } else {
+        toast.error(data.error || "Failed to delete application");
+      }
+    } catch (err: any) {
+      toast.error(err?.message || "Failed to delete application");
+    } finally {
+      setDeletingInProgress(false);
+      setIsDeleteModalOpen(false);
+      setDeletingApp(null);
+    }
+  };
 
   // Auth Guard: Only founders allowed. Redirect investors.
   useEffect(() => {
@@ -256,6 +302,49 @@ export default function FounderDashboard() {
                 </div>
               </div>
             </div>
+
+            {/* Past Applications Section */}
+            <div className="bg-surface border border-border rounded-2xl p-8 flex flex-col gap-6">
+              <h3 className="font-display text-lg font-bold text-text">Past Applications</h3>
+              <div className="flex flex-col gap-4">
+                {(appData?.applications || []).map((appItem: any) => (
+                  <div
+                    key={appItem._id}
+                    className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 rounded-xl border border-border bg-bg/40 hover:border-action/20 transition-all"
+                  >
+                    <div>
+                      <h4 className="font-display font-bold text-text text-sm">{appItem.companyInfo?.name}</h4>
+                      <p className="text-xs text-text-muted mt-1">
+                        Submitted on {new Date(appItem.createdAt).toLocaleDateString(undefined, {
+                          year: 'numeric',
+                          month: 'short',
+                          day: 'numeric',
+                        })}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <span className={`text-[10px] font-data font-bold px-2 py-0.5 rounded border uppercase tracking-wider ${
+                        appItem.status === 'decided'
+                          ? 'bg-trust/10 text-trust border-trust/20'
+                          : 'bg-action/10 text-action border-action/20'
+                      }`}>
+                        {appItem.status}
+                      </span>
+                      <button
+                        onClick={() => {
+                          setDeletingApp(appItem);
+                          setIsDeleteModalOpen(true);
+                        }}
+                        className="text-xs px-3 py-1.5 rounded-lg border border-flag/30 text-flag hover:bg-flag/10 transition-colors cursor-pointer min-h-[38px] flex items-center justify-center font-semibold"
+                      >
+                        <Trash2 className="h-3.5 w-3.5 mr-1" />
+                        Delete
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
           </>
         ) : (
           /* Empty State */
@@ -276,6 +365,46 @@ export default function FounderDashboard() {
           </div>
         )}
       </main>
+
+      {/* Confirmation Modal */}
+      {isDeleteModalOpen && deletingApp && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-bg/85 backdrop-blur-sm">
+          <div className="w-full max-w-md bg-surface border border-border rounded-2xl p-6 shadow-2xl animate-in zoom-in duration-200">
+            <h3 className="font-display text-lg font-bold text-text mb-2">Confirm Removal</h3>
+            <p className="text-sm text-text-muted mb-6 leading-relaxed">
+              Delete this application for <strong className="text-text">{deletingApp.companyInfo?.name}</strong>? This removes all screening, diligence, and memo data. This can&apos;t be undone.
+            </p>
+            <div className="flex justify-end gap-3">
+              <button
+                type="button"
+                disabled={deletingInProgress}
+                onClick={() => {
+                  setIsDeleteModalOpen(false);
+                  setDeletingApp(null);
+                }}
+                className="px-4 py-2 text-xs font-semibold rounded-lg bg-bg border border-border text-text hover:bg-surface transition-colors cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                disabled={deletingInProgress}
+                onClick={confirmDeleteApp}
+                className="px-4 py-2 text-xs font-semibold rounded-lg bg-flag hover:bg-flag/90 text-white transition-colors cursor-pointer flex items-center gap-1.5"
+              >
+                {deletingInProgress ? (
+                  <>
+                    <Loader2 className="h-3 w-3 animate-spin" />
+                    Deleting…
+                  </>
+                ) : (
+                  'Delete'
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

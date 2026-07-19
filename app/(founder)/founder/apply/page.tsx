@@ -78,6 +78,20 @@ export default function FounderApply() {
     }
 
     setLoading(true);
+    // Re-verify at submission time too
+    try {
+      const checkRes = await fetch('/api/applications');
+      const checkData = await checkRes.json();
+      if (checkData.success && checkData.hasActiveApplication) {
+        toast.error('You already have an active application in progress.');
+        setHasActiveApplication(true);
+        setLoading(false);
+        return;
+      }
+    } catch {
+      // Non-fatal checking error, let POST route handle it
+    }
+
     try {
       const res = await fetch('/api/applications', {
         method: 'POST',
