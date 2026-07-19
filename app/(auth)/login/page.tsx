@@ -26,7 +26,7 @@ function LoginContent() {
       // Clear intent cookie if login is neutral
       document.cookie = 'scoutlayer_role_intent=; path=/; max-age=0; SameSite=Lax';
     }
-    signIn('google', { callbackUrl: '/' });
+    signIn('google', { callbackUrl: '/role-select' });
   };
 
   return (
