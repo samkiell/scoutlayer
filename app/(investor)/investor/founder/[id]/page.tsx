@@ -452,7 +452,14 @@ export default function FounderProfile() {
 
         {/* Structured Profile details */}
         <section className="bg-surface border border-border rounded-xl p-6">
-          <h2 className="font-display text-lg font-bold tracking-tight mb-4">Founder Signals</h2>
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 mb-4">
+            <h2 className="font-display text-lg font-bold tracking-tight">Founder Signals</h2>
+            <span className="text-xs text-text-muted font-medium font-data">
+              {founder.source === 'outbound'
+                ? 'Profile data sourced from public GitHub API'
+                : 'Application enriched with public GitHub data'}
+            </span>
+          </div>
           <div className="grid sm:grid-cols-2 md:grid-cols-4 gap-4">
             <div className="bg-bg/40 border border-border/50 p-4 rounded-lg">
               <span className="text-[10px] text-text-muted uppercase tracking-wider font-semibold">Location</span>
@@ -603,9 +610,41 @@ export default function FounderProfile() {
 
         {/* Investment Memo */}
         {memo && (
-          <section className="flex flex-col gap-3">
-            <h2 className="font-display text-lg font-bold tracking-tight">Investment Memo</h2>
-            <div className="bg-surface border border-border rounded-xl p-6 md:p-8 flex flex-col gap-7">
+          <section className="flex flex-col gap-3 print-memo-section">
+            <div className="flex justify-between items-center no-print">
+              <h2 className="font-display text-lg font-bold tracking-tight">Investment Memo</h2>
+              <button
+                onClick={() => window.print()}
+                className="flex items-center gap-2 px-3 py-1.5 bg-surface hover:bg-surface/80 border border-border rounded-lg text-xs font-semibold text-text-muted hover:text-text transition-all cursor-pointer"
+              >
+                <FileText className="h-3.5 w-3.5" />
+                Export PDF
+              </button>
+            </div>
+            <h2 className="font-display text-lg font-bold tracking-tight hidden print:block">Investment Memo - {founder.company}</h2>
+            <div className="bg-surface border border-border rounded-xl p-6 md:p-8 flex flex-col gap-7 print-container">
+              <style dangerouslySetInnerHTML={{ __html: `
+                @media print {
+                  body {
+                    background: #0D1117 !important;
+                    color: #EDEFF3 !important;
+                  }
+                  nav, button, footer, .no-print, .agent-console, .pipeline-stepper, .delete-btn {
+                    display: none !important;
+                  }
+                  .print-memo-section {
+                    display: block !important;
+                    width: 100% !important;
+                  }
+                  .print-container {
+                    border: none !important;
+                    background: transparent !important;
+                    padding: 0 !important;
+                    margin: 0 !important;
+                    max-width: 100% !important;
+                  }
+                }
+              `}} />
               {/* Company snapshot */}
               <div>
                 <h3 className="font-display font-semibold text-text mb-2 text-sm uppercase tracking-wider">Company Snapshot</h3>
@@ -671,6 +710,14 @@ export default function FounderProfile() {
                   </ul>
                 </div>
               )}
+              {/* Data Provenance Note */}
+              <div className="border-t border-border/40 pt-4 mt-2">
+                <p className="text-xs text-text-muted font-data italic">
+                  Data sources: {founder.source === 'inbound' 
+                    ? 'founder-submitted application + public GitHub enrichment' 
+                    : 'public GitHub profile'}
+                </p>
+              </div>
             </div>
           </section>
         )}
