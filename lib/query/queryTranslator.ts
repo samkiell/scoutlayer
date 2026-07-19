@@ -6,7 +6,7 @@ const client = new OpenAI({
   baseURL: 'https://api.groq.com/openai/v1',
 });
 
-const MODELS = ['gpt-oss-120b', 'llama-3.3-70b-versatile', 'llama3-70b-8192'];
+const MODELS = ['gpt-oss-120b', 'llama-3.3-70b-versatile'];
 
 async function callGroqWithFallback(systemPrompt: string, userPrompt: string): Promise<string> {
   let lastError: any = null;
