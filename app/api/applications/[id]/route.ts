@@ -19,6 +19,9 @@ export async function GET(
       return NextResponse.json({ success: false, error: 'Invalid application ID' }, { status: 400 });
     }
 
+    const role = (session.user as { role?: string } | undefined)?.role;
+    const userId = (session.user as { id?: string } | undefined)?.id;
+
     const client = await clientPromise;
     const db = client.db();
 
@@ -32,6 +35,28 @@ export async function GET(
     const founder = await db.collection('founders').findOne({ _id: new ObjectId(app.founderId) });
     if (!founder) {
       return NextResponse.json({ success: false, error: 'Founder not found' }, { status: 404 });
+    }
+
+    // Authorization:
+    // - Investors may view any application (that's their job).
+    // - Founders may only view their own application (match session user to the
+    //   application's founderId/userId).
+    if (role === 'founder') {
+      const founderUserId = founder.userId ? founder.userId.toString() : undefined;
+      const appFounderId = app.founderId ? app.founderId.toString() : undefined;
+      const ownsApplication = (userId && founderUserId === userId) || (userId && appFounderId === userId);
+      if (!ownsApplication) {
+        return NextResponse.json(
+          { success: false, error: 'Forbidden — you can only view your own application' },
+          { status: 403 }
+        );
+      }
+    } else if (role !== 'investor') {
+      // Any other (or missing) role is not permitted to read applications.
+      return NextResponse.json(
+        { success: false, error: 'Forbidden — insufficient role' },
+        { status: 403 }
+      );
     }
 
     // Fetch screening

@@ -78,6 +78,7 @@ export default function FounderProfile() {
 
   // Screening run states
   const [isScreening, setIsScreening] = useState(false);
+  const [isDeciding, setIsDeciding] = useState(false);
   const [logs, setLogs] = useState<string[]>([]);
   const logTerminalRef = useRef<HTMLDivElement>(null);
 

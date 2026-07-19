@@ -425,11 +425,10 @@ export default function ScoutPage() {
                     >
                       <ExternalLink className="h-4 w-4" />
                     </a>
-                    {/* Stub link — screening page not built yet */}
                     <button
-                      disabled
-                      title="Screening not built yet"
-                      className="text-xs px-3 py-1.5 rounded-lg border border-border text-text-muted opacity-40 cursor-not-allowed"
+                      onClick={() => router.push(`/investor/founder/${f.founderId}`)}
+                      title="View full profile, screening, diligence & memo"
+                      className="text-xs px-3 py-1.5 rounded-lg border border-action/30 text-action hover:bg-action/10 transition-colors cursor-pointer"
                     >
                       View
                     </button>
