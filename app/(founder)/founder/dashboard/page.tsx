@@ -15,6 +15,7 @@ export default function FounderDashboard() {
   const [loading, setLoading] = useState(true);
   const [appData, setAppData] = useState<{
     hasApplied: boolean;
+    hasActiveApplication?: boolean;
     application?: any;
     founder?: any;
   } | null>(null);
@@ -53,6 +54,9 @@ export default function FounderDashboard() {
   const hasApplied = appData?.hasApplied ?? false;
   const application = appData?.application;
   const founder = appData?.founder;
+  const hasActiveApplication = appData?.hasActiveApplication ?? false;
+  // Eligible to start a new application: at least one 'decided' app but none active.
+  const isDecidedAndEligible = hasApplied && application?.status === 'decided' && !hasActiveApplication;
 
   // Map application.status to stepper index (sourced -> 0, screening -> 1, diligence -> 2, decided -> 3)
   const getStageIndex = (statusStr?: string) => {
@@ -133,6 +137,25 @@ export default function FounderDashboard() {
                 </div>
               </div>
             </div>
+
+            {/* Eligible for a new application (most recent is decided, none active) */}
+            {isDecidedAndEligible && (
+              <div className="bg-surface border border-trust/30 rounded-2xl p-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                <div>
+                  <h3 className="font-display text-base font-bold text-text">Decision complete</h3>
+                  <p className="text-text-muted text-sm mt-1">
+                    Your previous application reached a final decision. You&apos;re now eligible to submit a new one.
+                  </p>
+                </div>
+                <Link
+                  href="/founder/apply"
+                  className="flex items-center gap-2 px-5 py-3 bg-action hover:bg-action/90 text-white font-semibold rounded-xl text-sm transition-all cursor-pointer shrink-0"
+                >
+                  <PlusCircle className="h-4 w-4" />
+                  Start New Application
+                </Link>
+              </div>
+            )}
 
             {/* Stepper Card */}
             <div className="bg-surface border border-border rounded-2xl p-8 flex flex-col gap-6">
