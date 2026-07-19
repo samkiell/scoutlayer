@@ -241,12 +241,12 @@ export default function FounderDashboard() {
                     <span className="text-xs text-text-muted uppercase tracking-wider font-semibold">Top Repositories</span>
                     <div className="grid gap-2">
                       {founder.structuredProfile.topRepos.slice(0, 3).map((repo: any, idx: number) => (
-                        <div key={idx} className="flex justify-between items-center bg-bg/50 border border-border/50 rounded-xl px-4 py-3">
+                        <div key={idx} className="flex justify-between items-center bg-bg/50 border border-border/50 rounded-xl px-4 py-3 min-w-0">
                           <a
                             href={repo.url}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="text-sm font-medium text-action hover:underline truncate max-w-[200px]"
+                            className="text-sm font-medium text-action hover:underline inline-block truncate max-w-[150px] sm:max-w-[250px]"
                           >
                             {repo.name}
                           </a>

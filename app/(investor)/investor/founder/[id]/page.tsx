@@ -406,9 +406,9 @@ export default function FounderProfile() {
           </button>
           
           <div className="flex flex-col sm:flex-row justify-between items-start gap-4">
-            <div>
-              <div className="flex items-center gap-3">
-                <h1 className="font-display text-3xl font-bold tracking-tight">{founder.name}</h1>
+            <div className="min-w-0 w-full sm:w-auto">
+              <div className="flex items-center gap-3 flex-wrap">
+                <h1 className="font-display text-2xl sm:text-3xl font-bold tracking-tight break-words">{founder.name}</h1>
                 {founder.source === 'inbound' ? (
                   <span className="text-[10px] font-data px-2 py-0.5 rounded border uppercase tracking-wider bg-action/10 text-action border-action/20">
                     Inbound
@@ -433,7 +433,7 @@ export default function FounderProfile() {
               <p className="text-text-muted text-sm mt-1 max-w-2xl">{founder.structuredProfile?.oneLiner}</p>
             </div>
             
-            <div className="bg-surface border border-border px-4 py-3 rounded-xl flex items-center gap-3 shrink-0">
+            <div className="bg-surface border border-border px-4 py-3 rounded-xl flex items-center gap-3 shrink-0 w-full sm:w-auto">
               <Award className="h-5 w-5 text-action" />
               <div>
                 <div className="text-[10px] text-text-muted uppercase tracking-wider font-medium">Founder Score</div>
@@ -461,7 +461,7 @@ export default function FounderProfile() {
                 : 'Application enriched with public GitHub data'}
             </span>
           </div>
-          <div className="grid sm:grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
             <div className="bg-bg/40 border border-border/50 p-4 rounded-lg">
               <span className="text-[10px] text-text-muted uppercase tracking-wider font-semibold">Location</span>
               <p className="text-sm font-medium mt-1 text-text">{founder.structuredProfile?.location || 'Not specified'}</p>
@@ -485,19 +485,19 @@ export default function FounderProfile() {
           {founder.structuredProfile?.topRepos && founder.structuredProfile.topRepos.length > 0 && (
             <div className="mt-6 border-t border-border/50 pt-4">
               <span className="text-xs text-text-muted uppercase tracking-wider font-semibold">Top Repositories</span>
-              <div className="grid sm:grid-cols-2 gap-3 mt-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-3">
                 {founder.structuredProfile.topRepos.slice(0, 4).map((repo: any, idx: number) => (
-                  <div key={idx} className="flex justify-between items-start bg-bg/25 border border-border/30 rounded-xl px-4 py-3">
+                  <div key={idx} className="flex justify-between items-start bg-bg/25 border border-border/30 rounded-xl px-4 py-3 min-w-0">
                     <div className="flex flex-col min-w-0 pr-2">
                       <a
                         href={repo.url}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="text-sm font-medium text-action hover:underline truncate"
+                        className="text-sm font-medium text-action hover:underline block truncate"
                       >
                         {repo.name}
                       </a>
-                      <span className="text-xs text-text-muted truncate mt-0.5">{repo.description || 'No description'}</span>
+                      <span className="text-xs text-text-muted block truncate mt-0.5">{repo.description || 'No description'}</span>
                     </div>
                     <div className="flex items-center gap-1 font-data text-xs text-text-muted shrink-0 mt-0.5">
                       <span>⭐</span>
@@ -512,13 +512,13 @@ export default function FounderProfile() {
 
         {/* 3-Axis Screening Section */}
         <section className="flex flex-col gap-4">
-          <div className="flex justify-between items-center">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
             <h2 className="font-display text-lg font-bold tracking-tight">3-Axis Screening</h2>
             
             {app.status === 'sourced' && !isScreening && (
               <button
                 onClick={runScreening}
-                className="flex items-center gap-2 px-4 py-2 bg-action hover:bg-action/90 text-white font-medium rounded-lg text-sm transition-all cursor-pointer"
+                className="flex items-center gap-2 px-4 py-2 bg-action hover:bg-action/90 text-white font-medium rounded-lg text-sm transition-all cursor-pointer w-full sm:w-auto justify-center"
               >
                 <Play className="h-4 w-4" />
                 Run Screening
@@ -528,7 +528,7 @@ export default function FounderProfile() {
             {app.status === 'screened' && (
               <button
                 onClick={runDiligence}
-                className="flex items-center gap-2 px-4 py-2 bg-action hover:bg-action/90 text-white font-medium rounded-lg text-sm transition-all cursor-pointer"
+                className="flex items-center gap-2 px-4 py-2 bg-action hover:bg-action/90 text-white font-medium rounded-lg text-sm transition-all cursor-pointer w-full sm:w-auto justify-center"
               >
                 <ShieldAlert className="h-4 w-4" />
                 Run Diligence
@@ -539,7 +539,7 @@ export default function FounderProfile() {
               <button
                 onClick={runDecision}
                 disabled={app.status === 'decided'}
-                className="flex items-center gap-2 px-4 py-2 bg-action hover:bg-action/90 text-white font-medium rounded-lg text-sm transition-all cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
+                className="flex items-center gap-2 px-4 py-2 bg-action hover:bg-action/90 text-white font-medium rounded-lg text-sm transition-all cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed w-full sm:w-auto justify-center"
               >
                 <FileText className="h-4 w-4" />
                 {app.status === 'decided' ? 'Memo Generated' : 'Generate Memo'}
