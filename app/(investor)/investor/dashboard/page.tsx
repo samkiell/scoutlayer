@@ -6,7 +6,7 @@ import Navbar from '@/components/Navbar';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
-import { Compass, Shield, Search, ArrowUpRight, Activity, Loader2 } from 'lucide-react';
+import { Compass, Shield, Search, ArrowUpRight, Activity, Loader2, Filter } from 'lucide-react';
 
 const GithubIcon = (props: React.SVGProps<SVGSVGElement>) => (
   <svg
@@ -42,6 +42,8 @@ export default function InvestorDashboard() {
   const [loading, setLoading] = useState(true);
   const [applications, setApplications] = useState<ApplicationItem[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
+  const [sourceFilter, setSourceFilter] = useState<string>('all');
+  const [stageFilter, setStageFilter] = useState<string>('all');
 
   // Auth Guard: Only investors allowed. Redirect founders.
   useEffect(() => {
@@ -82,11 +84,13 @@ export default function InvestorDashboard() {
 
   const filteredApplications = applications.filter((app) => {
     const query = searchQuery.toLowerCase();
-    return (
+    const matchesSearch =
       app.name.toLowerCase().includes(query) ||
       app.company.toLowerCase().includes(query) ||
-      (app.githubUsername && app.githubUsername.toLowerCase().includes(query))
-    );
+      (app.githubUsername && app.githubUsername.toLowerCase().includes(query));
+    const matchesSource = sourceFilter === 'all' || app.source === sourceFilter;
+    const matchesStage = stageFilter === 'all' || app.stage === stageFilter;
+    return matchesSearch && matchesSource && matchesStage;
   });
 
   return (
@@ -154,19 +158,44 @@ export default function InvestorDashboard() {
           </div>
         </div>
 
-        {/* Search bar */}
-        <div className="relative w-full max-w-md">
-          <span className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
-            <Search className="h-4 w-4 text-text-muted" />
-          </span>
-          <input
-            id="founder-search-input"
-            type="text"
-            placeholder="Search founders, companies, or github usernames..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-9 pr-4 py-2 bg-surface border border-border rounded-lg text-sm text-text placeholder-text-muted focus:outline-none focus:ring-1 focus:ring-action focus:border-action transition-all"
-          />
+        {/* Search and filters */}
+        <div className="flex flex-col sm:flex-row gap-3">
+          <div className="relative w-full max-w-md">
+            <span className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+              <Search className="h-4 w-4 text-text-muted" />
+            </span>
+            <input
+              id="founder-search-input"
+              type="text"
+              placeholder="Search founders, companies, or github usernames..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full pl-9 pr-4 py-2 bg-surface border border-border rounded-lg text-sm text-text placeholder-text-muted focus:outline-none focus:ring-1 focus:ring-action focus:border-action transition-all"
+            />
+          </div>
+          <div className="flex items-center gap-2">
+            <Filter className="h-4 w-4 text-text-muted" />
+            <select
+              value={sourceFilter}
+              onChange={(e) => setSourceFilter(e.target.value)}
+              className="bg-surface border border-border rounded-lg px-3 py-2 text-sm text-text focus:outline-none focus:ring-1 focus:ring-action focus:border-action transition-all"
+            >
+              <option value="all">All Sources</option>
+              <option value="inbound">Inbound</option>
+              <option value="outbound">Outbound</option>
+            </select>
+            <select
+              value={stageFilter}
+              onChange={(e) => setStageFilter(e.target.value)}
+              className="bg-surface border border-border rounded-lg px-3 py-2 text-sm text-text focus:outline-none focus:ring-1 focus:ring-action focus:border-action transition-all"
+            >
+              <option value="all">All Stages</option>
+              <option value="sourced">Sourced</option>
+              <option value="screening">Screening</option>
+              <option value="diligence">Diligence</option>
+              <option value="decided">Decided</option>
+            </select>
+          </div>
         </div>
 
         {/* Mobile card list */}

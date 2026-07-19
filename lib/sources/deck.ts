@@ -114,11 +114,12 @@ export async function extractDeckText(url: string | null | undefined): Promise<D
       reason: null,
       text: truncated,
     };
-  } catch (err: any) {
+  } catch (err) {
+    const message = err instanceof Error ? err.message : 'Network error';
     return {
       ok: true,
       analyzed: false,
-      reason: `Failed to fetch deck content: ${err?.message ?? 'Network error'}`,
+      reason: `Failed to fetch deck content: ${message}`,
       text: '',
     };
   }
