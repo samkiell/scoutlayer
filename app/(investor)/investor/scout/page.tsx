@@ -16,6 +16,9 @@ import {
   ExternalLink,
   Search,
   Trash2,
+  ChevronDown,
+  ChevronUp,
+  MapPin,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -24,6 +27,8 @@ interface Thesis {
   keywords: string[];
   minStars?: number;
   createdAfter?: string;
+  location?: string;
+  language?: string;
 }
 
 interface SourcingEvent {
@@ -51,6 +56,9 @@ export default function ScoutPage() {
   const [keywords, setKeywords] = useState<string[]>([]);
   const [minStars, setMinStars] = useState('');
   const [createdAfter, setCreatedAfter] = useState('');
+  const [location, setLocation] = useState('');
+  const [language, setLanguage] = useState('');
+  const [showMoreFilters, setShowMoreFilters] = useState(false);
 
   // ── Run state ──────────────────────────────────────────────────────────────
   const [status, setStatus] = useState<RunStatus>('idle');
@@ -186,6 +194,8 @@ export default function ScoutPage() {
     const thesis: Thesis = { keywords };
     if (minStars) thesis.minStars = parseInt(minStars, 10);
     if (createdAfter) thesis.createdAfter = createdAfter;
+    if (location) thesis.location = location;
+    if (language) thesis.language = language;
 
     // Scroll down to center the log container area in the viewport
     setTimeout(() => {
@@ -364,36 +374,88 @@ export default function ScoutPage() {
             <p className="text-xs text-text-muted">Press Enter or comma to add each keyword</p>
           </div>
 
-          {/* Min Stars + Created After */}
-          <div className="grid grid-cols-2 gap-4">
-            <div className="flex flex-col gap-2">
-              <label className="text-xs font-medium text-text-muted uppercase tracking-wider flex items-center gap-1">
-                <Star className="h-3 w-3" />
-                Min Stars (optional)
-              </label>
-              <input
-                type="number"
-                min={0}
-                placeholder="e.g. 20"
-                value={minStars}
-                onChange={(e) => setMinStars(e.target.value)}
-                disabled={isRunning}
-                className="bg-bg border border-border rounded-xl px-4 py-3 text-sm text-text transition-colors"
-              />
-            </div>
-            <div className="flex flex-col gap-2">
-              <label className="text-xs font-medium text-text-muted uppercase tracking-wider flex items-center gap-1">
-                <Calendar className="h-3 w-3" />
-                Created After (optional)
-              </label>
-              <input
-                type="date"
-                value={createdAfter}
-                onChange={(e) => setCreatedAfter(e.target.value)}
-                disabled={isRunning}
-                className="bg-bg border border-border rounded-xl px-4 py-3 text-sm text-text transition-colors w-full focus:border-action outline-none [&::-webkit-calendar-picker-indicator]:invert [&::-webkit-calendar-picker-indicator]:opacity-50 hover:[&::-webkit-calendar-picker-indicator]:opacity-100 cursor-pointer"
-              />
-            </div>
+          {/* Min Stars (Primary/always-visible) */}
+          <div className="flex flex-col gap-2">
+            <label className="text-xs font-medium text-text-muted uppercase tracking-wider flex items-center gap-1">
+              <Star className="h-3 w-3" />
+              Min Stars (optional)
+            </label>
+            <input
+              type="number"
+              min={0}
+              placeholder="e.g. 20"
+              value={minStars}
+              onChange={(e) => setMinStars(e.target.value)}
+              disabled={isRunning}
+              className="bg-bg border border-border rounded-xl px-4 py-3 text-sm text-text transition-colors focus:border-action outline-none"
+            />
+          </div>
+
+          {/* More filters (Collapsible Section) */}
+          <div className="border-t border-border/60 pt-4">
+            <button
+              type="button"
+              onClick={() => setShowMoreFilters(!showMoreFilters)}
+              className="flex items-center gap-2 text-xs font-semibold text-text hover:text-action transition-colors cursor-pointer"
+            >
+              {showMoreFilters ? (
+                <ChevronUp className="h-4 w-4 text-text-muted" />
+              ) : (
+                <ChevronDown className="h-4 w-4 text-text-muted" />
+              )}
+              More filters
+            </button>
+
+            {showMoreFilters && (
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-4 animate-in fade-in slide-in-from-top-2 duration-200">
+                {/* Location */}
+                <div className="flex flex-col gap-2">
+                  <label className="text-xs font-medium text-text-muted uppercase tracking-wider flex items-center gap-1">
+                    <MapPin className="h-3 w-3" />
+                    Location
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="e.g. Berlin"
+                    value={location}
+                    onChange={(e) => setLocation(e.target.value)}
+                    disabled={isRunning}
+                    className="bg-bg border border-border rounded-xl px-4 py-3 text-sm text-text transition-colors focus:border-action outline-none"
+                  />
+                </div>
+
+                {/* Language */}
+                <div className="flex flex-col gap-2">
+                  <label className="text-xs font-medium text-text-muted uppercase tracking-wider flex items-center gap-1">
+                    <Code2 className="h-3 w-3" />
+                    Language
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="e.g. TypeScript"
+                    value={language}
+                    onChange={(e) => setLanguage(e.target.value)}
+                    disabled={isRunning}
+                    className="bg-bg border border-border rounded-xl px-4 py-3 text-sm text-text transition-colors focus:border-action outline-none"
+                  />
+                </div>
+
+                {/* Created After */}
+                <div className="flex flex-col gap-2">
+                  <label className="text-xs font-medium text-text-muted uppercase tracking-wider flex items-center gap-1">
+                    <Calendar className="h-3 w-3" />
+                    Created After
+                  </label>
+                  <input
+                    type="date"
+                    value={createdAfter}
+                    onChange={(e) => setCreatedAfter(e.target.value)}
+                    disabled={isRunning}
+                    className="bg-bg border border-border rounded-xl px-4 py-3 text-sm text-text transition-colors w-full focus:border-action outline-none [&::-webkit-calendar-picker-indicator]:invert [&::-webkit-calendar-picker-indicator]:opacity-50 hover:[&::-webkit-calendar-picker-indicator]:opacity-100 cursor-pointer"
+                  />
+                </div>
+              </div>
+            )}
           </div>
 
           <div className="w-full">

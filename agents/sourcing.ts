@@ -90,6 +90,7 @@ export async function* runSourcingAgent(
       perPage: 30,
       minStars: thesis.minStars,
       createdAfter: thesis.createdAfter,
+      language: thesis.language,
     });
 
     if (!searchResult.ok) {
@@ -183,6 +184,22 @@ export async function* runSourcingAgent(
         continue;
       }
       const profile: GitHubUser = profileResult.data;
+
+      // Filter by location if specified
+      if (thesis.location && thesis.location.trim()) {
+        const queryLoc = thesis.location.trim().toLowerCase();
+        const userLoc = (profile.location || '').toLowerCase();
+        if (!userLoc.includes(queryLoc)) {
+          yield {
+            type: 'candidate_skip',
+            username,
+            reason: `location "${profile.location || ''}" does not match "${thesis.location}"`,
+          };
+          skipped++;
+          await appendLog(`Skipping candidate ${username}: location mismatch.`, 'info');
+          continue;
+        }
+      }
 
       // Fetch top repos
       const reposResult = await getUserRepos(username, 5);

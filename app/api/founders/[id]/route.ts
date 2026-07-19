@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import clientPromise from '@/lib/db';
 import { ObjectId } from 'mongodb';
+import { deleteFounderCascade } from '@/lib/utils/deleteCascade';
 
 export async function DELETE(
   req: Request,
@@ -55,50 +56,8 @@ export async function DELETE(
       );
     }
 
-    // Fetch corresponding applications to cascade delete their related records
-    // founderId in applications is stored as a string
-    const apps = await db.collection('applications').find({
-      $or: [
-        { founderId: id },
-        { founderId: new ObjectId(id) as any }
-      ]
-    }).toArray();
-
-    const appIds = apps.map((app) => app._id.toString());
-
-    // Cascade delete across all 5 related collections
-    // 1. founders
-    await db.collection('founders').deleteOne({ _id: new ObjectId(id) });
-
-    // 2. applications
-    await db.collection('applications').deleteMany({
-      $or: [
-        { founderId: id },
-        { founderId: new ObjectId(id) as any }
-      ]
-    });
-
-    if (appIds.length > 0) {
-      // 3. screenings
-      await db.collection('screenings').deleteMany({
-        applicationId: { $in: appIds }
-      });
-
-      // 4. trustClaims
-      await db.collection('trustClaims').deleteMany({
-        applicationId: { $in: appIds }
-      });
-
-      // 5. memos
-      await db.collection('memos').deleteMany({
-        applicationId: { $in: appIds }
-      });
-
-      // 6. pipelineRuns
-      await db.collection('pipelineRuns').deleteMany({
-        applicationId: { $in: appIds }
-      });
-    }
+    // Cascade delete across all related collections
+    await deleteFounderCascade(db, id);
 
     return NextResponse.json({ success: true, message: 'Founder and all associated records deleted successfully.' });
   } catch (error: any) {

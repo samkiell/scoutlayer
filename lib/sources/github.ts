@@ -111,6 +111,7 @@ export interface RepoSearchOptions {
   page?: number;
   minStars?: number;
   createdAfter?: string; // ISO date string, e.g. "2023-01-01"
+  language?: string;
 }
 
 // ─── Public API ───────────────────────────────────────────────────────────────
@@ -131,6 +132,7 @@ export async function searchRepos(
     page = 1,
     minStars,
     createdAfter,
+    language,
   } = options;
 
   // Split the query by spaces or commas, filter out empty strings, and join back.
@@ -138,8 +140,15 @@ export async function searchRepos(
   // We'll strip any broad OR-like formatting to ensure clean AND semantics.
   const queryTerms = query.split(/[\s,]+/).filter(Boolean).join(' ');
   let q = queryTerms;
-  if (q && minStars !== undefined) q += ` stars:>=${minStars}`;
-  if (q && createdAfter) q += ` created:>=${createdAfter}`;
+  if (language) {
+    q = q ? `${q} language:${language}` : `language:${language}`;
+  }
+  if (minStars !== undefined) {
+    q = q ? `${q} stars:>=${minStars}` : `stars:>=${minStars}`;
+  }
+  if (createdAfter) {
+    q = q ? `${q} created:>=${createdAfter}` : `created:>=${createdAfter}`;
+  }
 
   const params = new URLSearchParams({
     q,

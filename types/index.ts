@@ -70,6 +70,8 @@ export interface Thesis {
   keywords: string[];
   minStars?: number;
   createdAfter?: string; // ISO date, e.g. "2023-01-01"
+  location?: string;
+  language?: string;
 }
 
 export interface Application {
