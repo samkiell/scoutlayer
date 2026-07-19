@@ -1,6 +1,7 @@
 {
   "name": "scoutlayer",
   "version": "0.1.0",
+  "description": "AI-first venture sourcing & due diligence — evidence over access. Built for the Maschmeyer Group VC Brain challenge.",
   "private": true,
   "scripts": {
     "dev": "next dev",

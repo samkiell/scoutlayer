@@ -1,29 +1,20 @@
 <p align="center">
   <h1 align="center">🔭 ScoutLayer</h1>
-  <p align="center"><strong>AI-first venture sourcing & screening — built for the Maschmeyer Group "VC Brain" challenge.</strong></p>
-  <p align="center">Surface exceptional founders on evidence, not network access.</p>
+  <p align="center"><strong>AI-first venture sourcing & due diligence — evidence over access.</strong></p>
+  <p align="center">Built for the <a href="https://lablab.ai">Hack-Nation 6th Global AI Hackathon</a> · Maschmeyer Group "VC Brain" Challenge</p>
 </p>
 
 ---
 
-## What It Does
+## Overview
 
-ScoutLayer turns fragmented founder signals into a decision an investor can act on **within 24 hours** — with receipts at every step.
+ScoutLayer replaces the traditional VC deal-sourcing workflow — one that relies on warm intros and gut feeling — with an evidence-based pipeline that surfaces, screens, verifies, and synthesises founder signals into a decision an investor can act on **within 24 hours**, with receipts at every step.
 
-Founders apply directly **or** are discovered from GitHub before they start fundraising. Both paths converge into one funnel and flow through four pipeline stages:
-
-| Stage | What happens |
-|---|---|
-| **Sourcing** | Inbound applications + outbound GitHub discovery. Raw signals are structured into a unified founder profile. |
-| **Screening** | Three independent scoring axes — **Founder**, **Market**, **Idea-vs-Market** — each with trend tracking. Scores are never averaged into a single number. |
-| **Diligence** | Per-claim **Trust Scores** verified against real web evidence via Tavily + OpenAI. Contradictions are surfaced, not buried. |
-| **Decision** | An investment memo with explicit gap-flagging. Missing data is labelled `"not disclosed"` — never fabricated. |
-
-A persistent **Founder Score** follows each person across applications. Cold-start founders with sparse public history are explicitly flagged, not silently deprioritized.
+Founders apply directly **or** are discovered proactively from GitHub before they start fundraising. Both paths converge into a single funnel and flow through four AI agent stages, each producing auditable, citation-backed artefacts.
 
 ---
 
-## Architecture
+## Architecture — The 4-Agent Pipeline
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
@@ -45,11 +36,11 @@ A persistent **Founder Score** follows each person across applications. Cold-sta
 │                                                                  │
 │  ┌────────────┐  ┌────────────┐  ┌────────────┐  ┌────────────┐ │
 │  │  Sourcing  │→ │ Screening  │→ │ Diligence  │→ │  Decision  │ │
-│  │   Agent    │  │   Agent    │  │   Agent    │  │   Agent    │ │
+│  │  (Planner) │  │(Specialist)│  │ (Verifier) │  │(Synthesizer│ │
 │  └────────────┘  └────────────┘  └────────────┘  └────────────┘ │
 │       │                │               │               │         │
-│    GitHub API       Groq LLM      Tavily Search     OpenAI      │
-│                                                                  │
+│    GitHub API       Groq LLM      Tavily Search     Groq LLM    │
+│                                   + OpenAI                       │
 └──────────────────────────────────────────────────────────────────┘
               │
               ▼
@@ -59,14 +50,32 @@ A persistent **Founder Score** follows each person across applications. Cold-sta
        └──────────┘
 ```
 
-### Multi-Agent System
+### Multi-Agent Roles
 
-| Agent | Role | LLM |
-|---|---|---|
-| **Sourcing Agent** | Ingests raw signals (GitHub repos, profiles) and structures them into `founders.structuredProfile`. Handles cold-start detection. | Groq |
-| **Screening Agent** | Scores the three axes independently with trend indicators (improving / declining / stable). | Groq |
-| **Verifier Agent** | Extracts claims from the structured profile, cross-checks each against web evidence via Tavily, computes per-claim Trust Scores. | OpenAI |
-| **Synthesizer Agent** | Compiles the investment memo from screening + trust data. Flags gaps and contradictions. Never fabricates data. | OpenAI |
+| Stage | Agent Role | What It Does | LLM |
+|---|---|---|---|
+| **Sourcing** | Planner | Ingests raw signals (GitHub repos, profiles, deck text) and structures them into `founders.structuredProfile`. Handles cold-start detection — founders with sparse public history are flagged, not silently deprioritized. | — (data gathering) |
+| **Screening** | Specialist | Scores three axes independently — **Founder**, **Market**, **Idea-vs-Market** — with trend tracking (improving / declining / stable). Axes are never averaged into a composite score. | Groq (`gpt-oss-120b`) |
+| **Diligence** | Verifier | Extracts claims from the structured profile, cross-checks each against live web evidence via Tavily, and computes per-claim Trust Scores (0–100) with source URLs. Contradictions are surfaced, not buried. | OpenAI (`gpt-4.1-mini`) |
+| **Decision** | Synthesizer | Compiles everything into an investment memo: Company Snapshot, Investment Hypotheses, SWOT, Problem & Product, Traction & KPIs. Missing data is labelled "not disclosed" — never fabricated. Computes a persistent Founder Score. | Groq (`gpt-oss-120b`) |
+
+```mermaid
+flowchart LR
+    A["Inbound\nApplication"] --> C["Sourcing\nAgent"]
+    B["Outbound\nGitHub Scout"] --> C
+    C --> D["Screening\nAgent"]
+    D --> E["Diligence\nAgent"]
+    E --> F["Decision\nAgent"]
+    F --> G["Investment\nMemo"]
+
+    style A fill:#4f46e5,color:#fff
+    style B fill:#4f46e5,color:#fff
+    style C fill:#7c3aed,color:#fff
+    style D fill:#7c3aed,color:#fff
+    style E fill:#7c3aed,color:#fff
+    style F fill:#7c3aed,color:#fff
+    style G fill:#059669,color:#fff
+```
 
 ---
 
@@ -78,8 +87,8 @@ A persistent **Founder Score** follows each person across applications. Cold-sta
 | Styling | [Tailwind CSS v4](https://tailwindcss.com) |
 | Database | [MongoDB Atlas](https://www.mongodb.com/atlas) |
 | Auth | [NextAuth.js](https://next-auth.js.org) (Google OAuth) |
-| Fast LLM | [Groq](https://groq.com) — sourcing & screening |
-| Reasoning LLM | [OpenAI](https://openai.com) — diligence & decision |
+| Fast LLM | [Groq](https://groq.com) — sourcing & screening (`openai/gpt-oss-120b`) |
+| Reasoning LLM | [OpenAI](https://openai.com) — diligence verification (`gpt-4.1-mini`) |
 | Web Search | [Tavily](https://tavily.com) — claim verification |
 | PDF Export | [@react-pdf/renderer](https://react-pdf.org) — memo download |
 | Icons | [Lucide React](https://lucide.dev) |
@@ -92,14 +101,14 @@ A persistent **Founder Score** follows each person across applications. Cold-sta
 
 - Node.js 18+
 - MongoDB Atlas cluster (or local MongoDB)
-- API keys for Groq, OpenAI, Tavily, and a GitHub PAT
+- API keys for Groq, OpenAI, Tavily, and a GitHub Personal Access Token
 - Google OAuth credentials (for NextAuth)
 
 ### Setup
 
 ```bash
 # Clone the repo
-git clone https://github.com/your-username/scoutlayer.git
+git clone https://github.com/samkielio/scoutlayer.git
 cd scoutlayer
 
 # Install dependencies
@@ -116,22 +125,19 @@ Open [http://localhost:3000](http://localhost:3000).
 
 ### Environment Variables
 
-```env
-# API Keys
-GROQ_API_KEY=
-OPENAI_API_KEY=
-TAVILY_API_KEY=
-GITHUB_PAT=
+See [`.env.example`](.env.example) for the full list. All variables are required:
 
-# Database
-MONGODB_URI=
-
-# Authentication (NextAuth)
-NEXTAUTH_SECRET=
-NEXTAUTH_URL=http://localhost:3000
-GOOGLE_CLIENT_ID=
-GOOGLE_CLIENT_SECRET=
-```
+| Variable | Purpose |
+|---|---|
+| `GROQ_API_KEY` | Groq API key for screening & decision agents |
+| `OPENAI_API_KEY` | OpenAI API key for diligence verification |
+| `TAVILY_API_KEY` | Tavily API key for web-evidence claim verification |
+| `GITHUB_PAT` | GitHub Personal Access Token for outbound sourcing (5k req/hr) |
+| `MONGODB_URI` | MongoDB connection string |
+| `NEXTAUTH_SECRET` | Random secret for NextAuth JWT signing |
+| `NEXTAUTH_URL` | Base URL of the app (e.g. `http://localhost:3000`) |
+| `GOOGLE_CLIENT_ID` | Google OAuth client ID |
+| `GOOGLE_CLIENT_SECRET` | Google OAuth client secret |
 
 ---
 
@@ -156,15 +162,7 @@ scoutlayer/
 │   │       ├── founder/    # Per-founder deep-dive + memo
 │   │       ├── scout/      # Outbound GitHub scouting
 │   │       └── search/     # Natural-language query interface
-│   ├── api/
-│   │   ├── applications/   # CRUD for applications
-│   │   ├── diligence/      # Trust score computation
-│   │   ├── founders/       # Founder profile endpoints
-│   │   ├── memo/           # Memo generation + retrieval
-│   │   ├── pipeline/       # Pipeline orchestration
-│   │   ├── query/          # NL → MongoDB filter translation
-│   │   ├── scout/          # Outbound sourcing triggers
-│   │   └── screen/         # Screening execution
+│   ├── api/                # Server-side API routes
 │   └── page.tsx            # Landing page
 ├── components/             # Shared UI components
 │   ├── EvidenceReceipt.tsx #   Trust claim evidence display
@@ -173,9 +171,8 @@ scoutlayer/
 │   └── ...
 ├── lib/
 │   ├── sources/            # Data source connectors (GitHub, deck parser)
-│   ├── pipeline/           # Pipeline stage orchestration
-│   ├── query/              # NL query processing
-│   └── utils/              # Shared utilities
+│   ├── query/              # NL → MongoDB filter translation
+│   └── utils/              # Truncation, trust score, cascade delete
 ├── types/                  # TypeScript type definitions
 └── middleware.ts           # Role-based route gating
 ```
@@ -188,50 +185,57 @@ scoutlayer/
 
 2. **Trust Scores with receipts.** Every claim in a founder profile is verified against web evidence. The confidence level and source URL are stored — investors see exactly what was checked and what wasn't.
 
-3. **Cold-start flagging, not penalizing.** Founders with sparse public profiles (`< 20 followers`, no bio, no company) are explicitly flagged for manual review. They are never silently dropped from the pipeline.
+3. **Cold-start flagging, not penalising.** Founders with sparse public profiles (< 20 followers, no bio, no company) are explicitly flagged for manual review. They are never silently dropped from the pipeline.
 
 4. **Persistent Founder Score.** A founder's score follows them across multiple applications, building a longitudinal signal over time.
 
-5. **Gap-flagging, not fabrication.** Missing data in the investment memo is labelled `"not disclosed"`. The system never generates data to fill gaps.
+5. **Gap-flagging, not fabrication.** Missing data in the investment memo is labelled "not disclosed". The system never generates data to fill gaps.
 
 ---
 
-## How the Pipeline Works
+## Judging Criteria Alignment
 
-```mermaid
-flowchart LR
-    A["Inbound\nApplication"] --> C["Sourcing\nAgent"]
-    B["Outbound\nGitHub Scout"] --> C
-    C --> D["Screening\nAgent"]
-    D --> E["Diligence\nAgent"]
-    E --> F["Decision\nAgent"]
-    F --> G["Investment\nMemo"]
+### 1. Data Architecture
+- MongoDB schema designed around the full pipeline lifecycle: `founders`, `applications`, `screenings`, `trustClaims`, `memos`, `pipelineRuns`
+- Every pipeline run is logged with timestamped entries for full auditability
+- `structuredProfile` normalises heterogeneous signals (GitHub API data, deck text, user-submitted info) into one schema
 
-    style A fill:#4f46e5,color:#fff
-    style B fill:#4f46e5,color:#fff
-    style C fill:#7c3aed,color:#fff
-    style D fill:#7c3aed,color:#fff
-    style E fill:#7c3aed,color:#fff
-    style F fill:#7c3aed,color:#fff
-    style G fill:#059669,color:#fff
-```
+### 2. Intelligent Analysis & Trust
+- Three independent screening axes with per-axis trend tracking, avoiding composite-score masking
+- Per-claim Trust Scores (0–100) verified via Tavily web search with citation URLs
+- Cold-start detection flags sparse profiles for manual review rather than silently penalising
+- The Verifier agent explicitly surfaces contradictions and low-confidence evidence
 
-1. **Sourcing** — Founder applies via form **or** investor runs a thesis-driven GitHub scout. Raw signals are structured into a unified profile. Cold-start founders are flagged.
+### 3. Investment Utility
+- Generates structured investment memos with Company Snapshot, SWOT, Investment Hypotheses, Problem & Product, Traction & KPIs
+- Explicit gap-flagging: missing data is labelled "not disclosed", never fabricated
+- Downloadable PDF memos via `@react-pdf/renderer`
+- Persistent Founder Score builds longitudinal signal across applications
 
-2. **Screening** — Three specialist sub-agents score independently:
-   - **Founder Axis** — technical depth, execution history, domain expertise
-   - **Market Axis** — TAM, timing, competitive landscape
-   - **Idea-vs-Market Axis** — product-market fit evidence, differentiation
-
-3. **Diligence** — Claims are extracted from the profile and verified against live web data via Tavily. Each claim gets a Trust Score (0–100) with a source URL.
-
-4. **Decision** — The synthesizer compiles everything into an investment memo with sections: Company Snapshot, Investment Hypotheses, SWOT, Problem & Product, Traction & KPIs. Gaps are explicitly flagged.
+### 4. User Experience
+- Dual-persona app: separate flows for founders (apply, track status) and investors (dashboard, deep-dive, scout, search)
+- Real-time pipeline progress via streaming (SSE) with visual stepper UI
+- Natural-language search translates investor queries into MongoDB filters
+- Role-based auth and middleware routing via NextAuth + Google OAuth
 
 ---
 
-## Built By
+## Known Limitations
 
-**SAMKIEL** — solo build for the [Maschmeyer Group "VC Brain" Hackathon Challenge](https://www.mgv.vc/).
+Being upfront about current gaps — judges respect honesty over silence:
+
+- **GitHub is the sole outbound sourcing channel.** LinkedIn, Twitter/X, and AngelList integrations are not built. Founders who are not active on GitHub will only enter via the inbound application path.
+- **Market axis relies on lightweight repo-signal inference, not deep market research.** TAM, competitive landscape, and timing signals are inferred from repo metadata and LLM reasoning rather than from dedicated market-data APIs or financial databases.
+- **Deck analysis is limited to public Google Slides links.** PDF, Notion, Canva, and other deck formats are detected but not parsed — the system explicitly discloses this gap in downstream stages rather than skipping silently.
+- **No real-time rate-limit recovery on Tavily.** If the Tavily API rate-limits during diligence, affected claims are marked "unverified" rather than retried. This is disclosed in the Trust Score output.
+- **Single-model dependency per stage.** Screening and decision depend on Groq's `gpt-oss-120b`; diligence on OpenAI `gpt-4.1-mini`. No automatic fallback to alternative models is implemented.
+- **No portfolio-level analytics.** The current build operates at the individual-founder level. Cross-portfolio views (sector heat maps, deal velocity metrics) are not implemented.
+
+---
+
+## Credits
+
+Built by **SAMKIEL** for the **Hack-Nation 6th Global AI Hackathon** — [Maschmeyer Group "VC Brain" Challenge](https://lablab.ai), in collaboration with the **MIT Club of Northern California** and the **MIT Club of Germany**.
 
 ---
 

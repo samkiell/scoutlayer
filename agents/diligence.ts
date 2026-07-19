@@ -401,8 +401,6 @@ Example format:
       );
     }
 
-    // Log total token usage observed
-    console.log(`[Diligence Total Token Usage] Input: ${totalInputTokens}, Output: ${totalOutputTokens}, Total: ${totalInputTokens + totalOutputTokens}`);
     await appendLog(`Diligence completed. Total estimated token usage: Input: ${totalInputTokens}, Output: ${totalOutputTokens}`);
 
     await appsCol.updateOne({ _id: appObjectId }, { $set: { status: 'diligenced' } });
