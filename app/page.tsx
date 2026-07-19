@@ -32,7 +32,7 @@ export default function Home() {
       if (!role) {
         router.push('/role-select');
       } else if (role === 'founder') {
-        // Query to check if founder has applied (using a mock check or API check; let's check via a client-side fetch or helper)
+        // Check if founder has an existing application to route them correctly
         fetch('/api/applications')
           .then((res) => res.json())
           .then((data) => {

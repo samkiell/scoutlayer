@@ -5,8 +5,8 @@ import clientPromise from './db';
 export const authOptions: NextAuthOptions = {
   providers: [
     GoogleProvider({
-      clientId: process.env.GOOGLE_CLIENT_ID || 'dummy-client-id',
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET || 'dummy-client-secret',
+      clientId: process.env.GOOGLE_CLIENT_ID || '',
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET || '',
     }),
   ],
   session: {
