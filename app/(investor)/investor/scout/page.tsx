@@ -83,6 +83,7 @@ export default function ScoutPage() {
   const [search, setSearch] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [loadingPipeline, setLoadingPipeline] = useState(true);
+  const [sessionSourcedFounderIds, setSessionSourcedFounderIds] = useState<string[]>([]);
 
   // Delete modal states
   const [deletingFounder, setDeletingFounder] = useState<PipelineItem | null>(null);
@@ -143,7 +144,11 @@ export default function ScoutPage() {
   }, [search]);
 
   // Client-side filter by name, company, or GitHub username.
+  // Only show founders that have been sourced in the current run.
   const visiblePipeline = pipeline.filter((item) => {
+    if (!sessionSourcedFounderIds.includes(item.founderId || '')) {
+      return false;
+    }
     const q = debouncedSearch.trim().toLowerCase();
     if (!q) return true;
     return (
@@ -191,6 +196,7 @@ export default function ScoutPage() {
     setEvents([]);
     setRunId(null);
     setStatus('running');
+    setSessionSourcedFounderIds([]);
 
     const thesis: Thesis = { keywords };
     if (minStars) thesis.minStars = parseInt(minStars, 10);
@@ -241,6 +247,9 @@ export default function ScoutPage() {
             // Handle specific event types
             if (evt.type === 'run_start' && evt.runId) {
               setRunId(evt.runId);
+            }
+            if (evt.type === 'candidate_saved' && evt.founderId) {
+              setSessionSourcedFounderIds((prev) => [...prev, evt.founderId!]);
             }
             if (evt.type === 'run_done') {
               setStatus('done');
