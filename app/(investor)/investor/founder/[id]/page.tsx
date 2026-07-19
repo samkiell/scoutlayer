@@ -16,9 +16,53 @@ interface AxisScore {
 }
 
 interface ScreeningData {
-  founderAxis: AxisScore;
-  marketAxis: AxisScore;
-  ideaVsMarketAxis: AxisScore;
+  founderAxis?: AxisScore;
+  marketAxis?: AxisScore;
+  ideaVsMarketAxis?: AxisScore;
+}
+
+// Renders one axis card — shows a pulsing skeleton if the axis data hasn't arrived yet.
+// This handles the SSE streaming case where axes arrive one at a time.
+function AxisCard({
+  label,
+  axis,
+  trendColor,
+  trendIcon,
+}: {
+  label: string;
+  axis: AxisScore | undefined;
+  trendColor: (t: string) => string;
+  trendIcon: (t: string) => React.ReactNode;
+}) {
+  if (!axis) {
+    return (
+      <div className="bg-surface border border-border rounded-xl p-5 flex flex-col gap-3 animate-pulse">
+        <div className="flex justify-between items-center">
+          <span className="text-[10px] text-text-muted uppercase tracking-widest font-semibold">{label}</span>
+          <div className="h-3 w-16 bg-border/50 rounded" />
+        </div>
+        <div className="h-10 w-20 bg-border/50 rounded" />
+        <div className="h-3 w-full bg-border/30 rounded" />
+        <div className="h-3 w-3/4 bg-border/20 rounded" />
+      </div>
+    );
+  }
+
+  return (
+    <div className="bg-surface border border-border rounded-xl p-5 flex flex-col justify-between hover:border-border/85 transition-all">
+      <div>
+        <div className="flex justify-between items-center mb-2">
+          <span className="text-[10px] text-text-muted uppercase tracking-widest font-semibold">{label}</span>
+          <span className={`text-[10px] font-data font-medium flex items-center gap-1 uppercase ${trendColor(axis.trend)}`}>
+            {trendIcon(axis.trend)}
+            {axis.trend}
+          </span>
+        </div>
+        <div className="font-data text-4xl font-bold mb-3">{axis.score}</div>
+        <p className="text-sm text-text-muted leading-relaxed font-body">{axis.evidence}</p>
+      </div>
+    </div>
+  );
 }
 
 export default function FounderProfile() {
@@ -114,17 +158,17 @@ export default function FounderProfile() {
 
             if (evt.type === 'founder_axis_done') {
               setScreening((prev) => ({
-                ...prev!,
+                ...(prev ?? {}),
                 founderAxis: { score: evt.score, trend: 'stable', evidence: evt.evidence }
               }));
             } else if (evt.type === 'market_axis_done') {
               setScreening((prev) => ({
-                ...prev!,
+                ...(prev ?? {}),
                 marketAxis: { score: evt.score, trend: 'stable', evidence: evt.evidence }
               }));
             } else if (evt.type === 'idea_axis_done') {
               setScreening((prev) => ({
-                ...prev!,
+                ...(prev ?? {}),
                 ideaVsMarketAxis: { score: evt.score, trend: 'stable', evidence: evt.evidence }
               }));
             } else if (evt.type === 'run_done') {
@@ -338,53 +382,12 @@ export default function FounderProfile() {
             </div>
           )}
 
-          {/* Cards Display */}
+          {/* Cards Display — each axis rendered independently to survive partial SSE state */}
           {screening ? (
             <div className="grid sm:grid-cols-3 gap-4 mt-2">
-              {/* Founder Axis */}
-              <div className="bg-surface border border-border rounded-xl p-5 flex flex-col justify-between hover:border-border/85 transition-all">
-                <div>
-                  <div className="flex justify-between items-center mb-2">
-                    <span className="text-[10px] text-text-muted uppercase tracking-widest font-semibold">Founder Axis</span>
-                    <span className={`text-[10px] font-data font-medium flex items-center gap-1 uppercase ${trendColor(screening.founderAxis.trend)}`}>
-                      {trendIcon(screening.founderAxis.trend)}
-                      {screening.founderAxis.trend}
-                    </span>
-                  </div>
-                  <div className="font-data text-4xl font-bold mb-3">{screening.founderAxis.score}</div>
-                  <p className="text-sm text-text-muted leading-relaxed font-body">{screening.founderAxis.evidence}</p>
-                </div>
-              </div>
-
-              {/* Market Axis */}
-              <div className="bg-surface border border-border rounded-xl p-5 flex flex-col justify-between hover:border-border/85 transition-all">
-                <div>
-                  <div className="flex justify-between items-center mb-2">
-                    <span className="text-[10px] text-text-muted uppercase tracking-widest font-semibold">Market Axis</span>
-                    <span className={`text-[10px] font-data font-medium flex items-center gap-1 uppercase ${trendColor(screening.marketAxis.trend)}`}>
-                      {trendIcon(screening.marketAxis.trend)}
-                      {screening.marketAxis.trend}
-                    </span>
-                  </div>
-                  <div className="font-data text-4xl font-bold mb-3">{screening.marketAxis.score}</div>
-                  <p className="text-sm text-text-muted leading-relaxed font-body">{screening.marketAxis.evidence}</p>
-                </div>
-              </div>
-
-              {/* Idea vs Market Axis */}
-              <div className="bg-surface border border-border rounded-xl p-5 flex flex-col justify-between hover:border-border/85 transition-all">
-                <div>
-                  <div className="flex justify-between items-center mb-2">
-                    <span className="text-[10px] text-text-muted uppercase tracking-widest font-semibold">Idea vs Market Fit</span>
-                    <span className={`text-[10px] font-data font-medium flex items-center gap-1 uppercase ${trendColor(screening.ideaVsMarketAxis.trend)}`}>
-                      {trendIcon(screening.ideaVsMarketAxis.trend)}
-                      {screening.ideaVsMarketAxis.trend}
-                    </span>
-                  </div>
-                  <div className="font-data text-4xl font-bold mb-3">{screening.ideaVsMarketAxis.score}</div>
-                  <p className="text-sm text-text-muted leading-relaxed font-body">{screening.ideaVsMarketAxis.evidence}</p>
-                </div>
-              </div>
+              <AxisCard label="Founder Axis" axis={screening.founderAxis} trendColor={trendColor} trendIcon={trendIcon} />
+              <AxisCard label="Market Axis" axis={screening.marketAxis} trendColor={trendColor} trendIcon={trendIcon} />
+              <AxisCard label="Idea vs Market Fit" axis={screening.ideaVsMarketAxis} trendColor={trendColor} trendIcon={trendIcon} />
             </div>
           ) : (
             !isScreening && (
