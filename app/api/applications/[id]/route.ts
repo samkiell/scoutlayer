@@ -51,7 +51,20 @@ export async function GET(
           { status: 403 }
         );
       }
-    } else if (role !== 'investor') {
+    } else if (role === 'investor') {
+      // Outbound founders are scoped to the investor who sourced them. Inbound
+      // founders (self-applied) remain open to any investor.
+      if (
+        founder.source === 'outbound' &&
+        founder.sourcedByInvestorId &&
+        founder.sourcedByInvestorId.toString() !== userId
+      ) {
+        return NextResponse.json(
+          { success: false, error: 'Forbidden — outbound founder scoped to a different investor' },
+          { status: 403 }
+        );
+      }
+    } else {
       // Any other (or missing) role is not permitted to read applications.
       return NextResponse.json(
         { success: false, error: 'Forbidden — insufficient role' },

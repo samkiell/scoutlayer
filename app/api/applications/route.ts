@@ -72,7 +72,6 @@ export async function GET(req: Request) {
             $match: {
               $or: [
                 { 'founder.source': 'inbound' },
-                { 'founder.source': { $ne: 'outbound' } },
                 { 'founder.sourcedByInvestorId': user._id.toString() },
               ],
             },
