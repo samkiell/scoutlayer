@@ -19,6 +19,7 @@ import {
   ChevronDown,
   ChevronUp,
   MapPin,
+  Github,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -579,13 +580,16 @@ export default function ScoutPage() {
                     <div className="min-w-0">
                       <div className="flex items-center gap-2">
                         <span className="font-medium text-sm truncate">{item.name}</span>
-                        <span className={`text-[10px] font-data px-2 py-0.5 rounded border uppercase tracking-wider ${
-                          item.source === 'inbound'
-                            ? 'bg-action/10 text-action border-action/20'
-                            : 'bg-trust/10 text-trust border-trust/20'
-                        }`}>
-                          {item.source}
-                        </span>
+                        {item.source === 'inbound' ? (
+                          <span className="text-[10px] font-data px-2 py-0.5 rounded border uppercase tracking-wider bg-action/10 text-action border-action/20">
+                            Inbound
+                          </span>
+                        ) : (
+                          <span className="text-[10px] font-data px-2 py-0.5 rounded border uppercase tracking-wider bg-surface text-text-muted border-border flex items-center gap-1 inline-flex">
+                            <Github className="h-3.5 w-3.5" />
+                            Sourced via GitHub
+                          </span>
+                        )}
                       </div>
                       <p className="text-xs text-text-muted font-data mt-0.5 truncate">
                         {item.githubUsername ? `@${item.githubUsername}` : item.company}

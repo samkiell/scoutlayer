@@ -4,7 +4,7 @@
 import React, { useState } from 'react';
 import Navbar from '@/components/Navbar';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, Search, Sparkles, ArrowUpRight, Compass, Shield, HelpCircle } from 'lucide-react';
+import { ArrowLeft, Search, Sparkles, ArrowUpRight, Compass, Shield, HelpCircle, Github } from 'lucide-react';
 import { toast } from 'sonner';
 import Link from 'next/link';
 
