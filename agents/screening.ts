@@ -7,6 +7,7 @@ import {
   truncateLongField,
   checkTokenBudget,
 } from '@/lib/utils/truncation';
+import { extractDeckText } from '@/lib/sources/deck';
 
 export type ScreeningEvent =
   | { type: 'run_start'; message: string }
@@ -135,6 +136,9 @@ export async function* runScreeningAgent(
   const companyInfo = application.companyInfo || {};
   const deckUrl: string | undefined = application.deck;
 
+  const deckExtract = await extractDeckText(deckUrl);
+  const extractedDeckText = deckExtract.analyzed ? truncateDeckText(deckExtract.text) : null;
+
   // Truncate fields to protect the token budget
   const rawTopRepos = profile.topRepos || [];
   const sortedRepos = [...rawTopRepos].sort((a: any, b: any) => (b.stars || 0) - (a.stars || 0));
@@ -146,16 +150,7 @@ export async function* runScreeningAgent(
     url: r.url,
   }));
 
-  const deckText = truncateDeckText(
-    application.deckText ||
-    application.deckContent ||
-    application.deck_content ||
-    application.deck_text ||
-    companyInfo.deckText ||
-    companyInfo.deckContent
-  );
-
-  const truncatedBio = truncateLongField(profile.bio || profile.description);
+   const truncatedBio = truncateLongField(profile.bio || profile.description);
   const truncatedAdditionalContext = truncateLongField(
     application.additionalContext ||
     companyInfo.additionalContext ||
@@ -170,10 +165,14 @@ export async function* runScreeningAgent(
       oneLinerPitch: companyInfo.oneLiner || null,
       companyDescription: truncatedAdditionalContext || null,
       deckUrl: deckUrl || null,
-      deckText: deckText || null,
-      deckNote: deckUrl
-        ? 'A pitch deck link was provided.'
-        : 'No pitch deck was submitted.',
+      deckText: extractedDeckText || null,
+      deckAnalyzed: deckExtract.analyzed,
+      deckAnalyzedReason: deckExtract.reason,
+      deckNote: deckExtract.analyzed
+        ? 'Pitch deck text was successfully extracted and is provided below.'
+        : deckUrl
+          ? `Pitch deck link was provided but contents were not analyzed: ${deckExtract.reason}.`
+          : 'No pitch deck was submitted.',
     },
     // GitHub / structured profile data
     github: {
@@ -196,12 +195,12 @@ export async function* runScreeningAgent(
     await appendLog('Analyzing founder signals...');
 
     const founderSystemPrompt = `You are a venture capital investment screening agent.
-You will receive two data sources: (1) the founder's APPLICATION data — company name, one-liner pitch, company description, and deck link, and (2) their GITHUB profile signals — repos, followers, bio, etc.
+You will receive two data sources: (1) the founder's APPLICATION data — company name, one-liner pitch, company description, and pitch deck text if extractable, and (2) their GITHUB profile signals — repos, followers, bio, etc.
 Evaluate the founder's strength on the "Founder" axis by combining BOTH sources:
-- Application signals: quality of the pitch, clarity of the company vision, background implied by the submission.
+- Application signals: quality of the pitch, clarity of the company vision, background implied by the submission, and deck text if provided.
 - GitHub signals: repo activity, followers, language breadth, cold-start status.
 Weight the application data heavily — a founder who submitted a clear company name and pitch should NOT be penalized for sparse GitHub activity.
-If a deck URL is present but contents were not analyzed, note that in your rationale but do not penalize.
+If a deck was provided but its contents could not be analyzed, note that in your rationale but do not penalize.
 Provide your response strictly in the following JSON format:
 {
   "score": <number between 0 and 100>,
@@ -226,9 +225,9 @@ Provide your response strictly in the following JSON format:
     await appendLog('Analyzing market space...');
 
     const marketSystemPrompt = `You are a venture capital investment screening agent.
-You will receive two data sources: (1) the founder's APPLICATION data — company name, one-liner pitch, company description, and deck link, and (2) their GITHUB profile signals.
+You will receive two data sources: (1) the founder's APPLICATION data — company name, one-liner pitch, company description, and pitch deck text if extractable, and (2) their GITHUB profile signals.
 Analyze the market the founder is targeting by combining BOTH sources:
-- Application signals: the company description and one-liner pitch are the PRIMARY indicators of the market/space.
+- Application signals: the company description and one-liner pitch are the PRIMARY indicators of the market/space, supplemented by deck text if provided.
 - GitHub signals: repo descriptions, topics, and languages serve as SECONDARY proxies for technical market alignment.
 If the application provides a clear company description and pitch, use those as the primary basis for market assessment — do NOT fall back to GitHub-only reasoning.
 State explicitly whether market assessment is based on application data, GitHub proxy signals, or both.
@@ -256,9 +255,9 @@ Provide your response strictly in the following JSON format:
     await appendLog('Analyzing Idea vs Market fit...');
 
     const ideaSystemPrompt = `You are a venture capital investment screening agent.
-You will receive two data sources: (1) the founder's APPLICATION data — company name, one-liner pitch, company description, and deck link, and (2) their GITHUB profile signals.
+You will receive two data sources: (1) the founder's APPLICATION data — company name, one-liner pitch, company description, and pitch deck text if extractable, and (2) their GITHUB profile signals.
 Evaluate the "Idea vs Market" axis by combining BOTH sources:
-- The company name, one-liner pitch, and description from the APPLICATION are the PRIMARY indicators of the idea.
+- The company name, one-liner pitch, and description from the APPLICATION are the PRIMARY indicators of the idea, supplemented by deck text if provided.
 - GitHub repos and topics provide SECONDARY signals about technical capability and market alignment.
 Assess: does the submitted idea/product description fit the market? Is there pivot potential? Is the pitch clear and compelling?
 Do NOT describe the idea as "vague" if a clear company name and pitch were provided in the application data.

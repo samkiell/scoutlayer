@@ -17,6 +17,7 @@
 import clientPromise from '@/lib/db';
 import { ObjectId } from 'mongodb';
 import type { TrustClaim, StructuredProfile } from '@/types';
+import { extractDeckText, extractClaimFromDeckText } from '@/lib/sources/deck';
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
