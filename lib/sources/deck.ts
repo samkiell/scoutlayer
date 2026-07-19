@@ -10,7 +10,7 @@
 const GOOGLE_SLIDES_PATTERN = /docs\.google\.com\/presentation\/d\/([^/?#]+)/i;
 
 export type DeckExtractError = {
-  ok: false;
+  ok: boolean;
   analyzed: false;
   reason: string;
   text?: string;
