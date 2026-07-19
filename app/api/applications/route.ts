@@ -57,13 +57,21 @@ export async function GET(req: Request) {
       // such field and therefore match neither branch (orphaned) — see summary note.
 
       const applicationsCollection = db.collection('applications');
+      // NOTE: application.founderId is stored as a plain string, while
+      // founder._id is an ObjectId — so the join must convert via $toObjectId.
       const applications = await applicationsCollection
         .aggregate([
           {
             $lookup: {
               from: 'founders',
-              localField: 'founderId',
-              foreignField: '_id',
+              let: { founderIdStr: '$founderId' },
+              pipeline: [
+                {
+                  $match: {
+                    $expr: { $eq: ['$_id', { $toObjectId: '$$founderIdStr' }] },
+                  },
+                },
+              ],
               as: 'founder',
             },
           },

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useRef, useCallback } from 'react';
+import React, { useState, useRef, useCallback, useEffect } from 'react';
 import Navbar from '@/components/Navbar';
 import PipelineStepper from '@/components/PipelineStepper';
 import { useRouter } from 'next/navigation';
@@ -15,7 +15,7 @@ import {
   Star,
   Calendar,
   ExternalLink,
-  Snowflake,
+  Search,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -40,13 +40,6 @@ interface SourcingEvent {
   reason?: string;
 }
 
-interface FounderEntry {
-  username: string;
-  founderId: string;
-  applicationId: string;
-  coldStart: boolean;
-}
-
 type RunStatus = 'idle' | 'running' | 'done' | 'error';
 
 // ── Component ─────────────────────────────────────────────────────────────────
@@ -62,10 +55,60 @@ export default function ScoutPage() {
   // ── Run state ──────────────────────────────────────────────────────────────
   const [status, setStatus] = useState<RunStatus>('idle');
   const [events, setEvents] = useState<SourcingEvent[]>([]);
-  const [founders, setFounders] = useState<FounderEntry[]>([]);
   const [runId, setRunId] = useState<string | null>(null);
   const logRef = useRef<HTMLDivElement>(null);
   const logContainerRef = useRef<HTMLDivElement>(null);
+
+  // ── Persisted pipeline: this investor's outbound + all inbound ─────────────
+  interface PipelineItem {
+    id: string;
+    name: string;
+    company: string;
+    githubUsername?: string | null;
+    source: 'inbound' | 'outbound';
+    stage: string;
+    founderScore: number | null;
+  }
+  const [pipeline, setPipeline] = useState<PipelineItem[]>([]);
+  const [search, setSearch] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
+  const [loadingPipeline, setLoadingPipeline] = useState(true);
+
+  // Fetch the combined, correctly-scoped pipeline list.
+  const loadPipeline = useCallback(async () => {
+    try {
+      const res = await fetch('/api/applications');
+      const data = await res.json();
+      if (data.success && data.applications) {
+        setPipeline(data.applications as PipelineItem[]);
+      }
+    } catch {
+      // non-fatal — keep current list
+    } finally {
+      setLoadingPipeline(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadPipeline();
+  }, [loadPipeline]);
+
+  // Debounce the search input (300ms).
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedSearch(search), 300);
+    return () => clearTimeout(t);
+  }, [search]);
+
+  // Client-side filter by name, company, or GitHub username.
+  const visiblePipeline = pipeline.filter((item) => {
+    const q = debouncedSearch.trim().toLowerCase();
+    if (!q) return true;
+    return (
+      item.name?.toLowerCase().includes(q) ||
+      item.company?.toLowerCase().includes(q) ||
+      (item.githubUsername || '').toLowerCase().includes(q)
+    );
+  });
 
   const addEvent = useCallback((evt: SourcingEvent) => {
     setEvents((prev) => [...prev, evt]);
@@ -99,7 +142,6 @@ export default function ScoutPage() {
 
     // Reset state
     setEvents([]);
-    setFounders([]);
     setRunId(null);
     setStatus('running');
 
@@ -151,27 +193,10 @@ export default function ScoutPage() {
             if (evt.type === 'run_start' && evt.runId) {
               setRunId(evt.runId);
             }
-            if (evt.type === 'candidate_saved' && evt.username && evt.founderId && evt.applicationId) {
-              setFounders((prev) => [
-                ...prev,
-                {
-                  username: evt.username!,
-                  founderId: evt.founderId!,
-                  applicationId: evt.applicationId!,
-                  coldStart: false, // will be set from candidate_structured
-                },
-              ]);
-            }
-            if (evt.type === 'candidate_structured' && evt.username) {
-              setFounders((prev) =>
-                prev.map((f) =>
-                  f.username === evt.username ? { ...f, coldStart: evt.coldStart ?? false } : f
-                )
-              );
-            }
             if (evt.type === 'run_done') {
               setStatus('done');
               toast.success(`Scout complete — ${evt.found ?? 0} founders saved`);
+              loadPipeline(); // refresh the scoped list with newly sourced founders
             }
             if (evt.type === 'run_error') {
               setStatus('error');
@@ -383,50 +408,78 @@ export default function ScoutPage() {
           </div>
         )}
 
-        {/* Founders found */}
-        {founders.length > 0 && (
-          <div className="flex flex-col gap-3">
+        {/* Pipeline — this investor's outbound + all inbound (scoped on server) */}
+        <div className="flex flex-col gap-3">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <h2 className="font-display text-lg font-semibold">
-              Founders Found{' '}
-              <span className="text-text-muted font-data text-sm ml-1">({founders.length})</span>
+              Sourced Pipeline{' '}
+              <span className="text-text-muted font-data text-sm ml-1">({visiblePipeline.length})</span>
             </h2>
 
+            {/* Search input — --surface styled per token system */}
+            <div className="relative w-full sm:w-72">
+              <Search className="h-4 w-4 text-text-muted absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+              <input
+                type="text"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Search founder, company, or @github"
+                className="w-full bg-surface border border-border rounded-xl pl-9 pr-3 py-2.5 text-sm text-text placeholder:text-text-muted outline-none focus:border-action/40 transition-colors"
+              />
+            </div>
+          </div>
+
+          {loadingPipeline ? (
+            <div className="bg-surface border border-border rounded-xl py-10 text-center">
+              <Loader2 className="h-5 w-5 animate-spin text-action mx-auto" />
+            </div>
+          ) : visiblePipeline.length === 0 ? (
+            <div className="bg-surface border border-border rounded-xl py-10 text-center text-text-muted text-sm">
+              {debouncedSearch
+                ? 'No founders match your search.'
+                : 'No sourced founders yet. Run a scout to discover founders.'}
+            </div>
+          ) : (
             <div className="flex flex-col gap-2">
-              {founders.map((f) => (
+              {visiblePipeline.map((item) => (
                 <div
-                  key={f.founderId}
+                  key={item.id}
                   className="flex items-center justify-between bg-surface border border-border rounded-xl px-5 py-4 hover:border-action/40 transition-colors"
                 >
-                  <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-3 min-w-0">
                     <Code2 className="h-4 w-4 text-text-muted shrink-0" />
-                    <div>
+                    <div className="min-w-0">
                       <div className="flex items-center gap-2">
-                        <span className="font-medium text-sm">@{f.username}</span>
-                        {f.coldStart && (
-                          <span className="flex items-center gap-1 text-xs text-flag bg-flag/10 px-2 py-0.5 rounded-full">
-                            <Snowflake className="h-3 w-3" />
-                            Cold Start
-                          </span>
-                        )}
+                        <span className="font-medium text-sm truncate">{item.name}</span>
+                        <span className={`text-[10px] font-data px-2 py-0.5 rounded border uppercase tracking-wider ${
+                          item.source === 'inbound'
+                            ? 'bg-action/10 text-action border-action/20'
+                            : 'bg-trust/10 text-trust border-trust/20'
+                        }`}>
+                          {item.source}
+                        </span>
                       </div>
-                      <p className="text-xs text-text-muted font-data mt-0.5">
-                        founder:{f.founderId.slice(-8)} · app:{f.applicationId.slice(-8)}
+                      <p className="text-xs text-text-muted font-data mt-0.5 truncate">
+                        {item.githubUsername ? `@${item.githubUsername}` : item.company}
+                        {item.githubUsername && item.company ? ` · ${item.company}` : ''}
                       </p>
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-3">
-                    <a
-                      href={`https://github.com/${f.username}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-text-muted hover:text-text transition-colors"
-                      title="Open GitHub profile"
-                    >
-                      <ExternalLink className="h-4 w-4" />
-                    </a>
+                  <div className="flex items-center gap-3 shrink-0">
+                    {item.githubUsername && (
+                      <a
+                        href={`https://github.com/${item.githubUsername}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-text-muted hover:text-text transition-colors"
+                        title="Open GitHub profile"
+                      >
+                        <ExternalLink className="h-4 w-4" />
+                      </a>
+                    )}
                     <button
-                      onClick={() => router.push(`/investor/founder/${f.founderId}`)}
+                      onClick={() => router.push(`/investor/founder/${item.id}`)}
                       title="View full profile, screening, diligence & memo"
                       className="text-xs px-3 py-1.5 rounded-lg border border-action/30 text-action hover:bg-action/10 transition-colors cursor-pointer"
                     >
@@ -436,14 +489,14 @@ export default function ScoutPage() {
                 </div>
               ))}
             </div>
-          </div>
-        )}
+          )}
+        </div>
 
         {/* Empty done state */}
-        {isDone && founders.length === 0 && (
-          <div className="text-center py-10 text-text-muted text-sm">
-            <Compass className="h-8 w-8 mx-auto mb-3 opacity-30" />
-            <p>No new founders found. All candidates may already be in your pipeline.</p>
+        {isDone && events.some((e) => e.type === 'run_done') && (
+          <div className="text-center py-6 text-text-muted text-sm">
+            <CheckCircle2 className="h-6 w-6 mx-auto mb-2 text-trust opacity-70" />
+            <p>Run complete — newly sourced founders are now in your pipeline above.</p>
           </div>
         )}
       </main>
