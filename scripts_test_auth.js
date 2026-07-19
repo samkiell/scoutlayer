@@ -4,16 +4,15 @@ const { encode } = require('next-auth/jwt');
 // This mirrors what next-auth sets in the `next-auth.session-token` cookie.
 (async () => {
   const secret = process.env.NEXTAUTH_SECRET || 'dev-secret';
-  const baseUser = { name: 't', email: 't@t.com' };
 
   const tokenA = await encode({
     secret,
-    token: { ...baseUser, role: 'investor', userId: '6a5c003c7883f8666934dc93', sub: '6a5c003c7883f8666934dc93' },
+    token: { name: 'A', email: 'samuelezekiel488@gmail.com', role: 'investor', userId: '6a5c003c7883f8666934dc93', sub: '6a5c003c7883f8666934dc93' },
     maxAge: 60 * 60,
   });
   const tokenB = await encode({
     secret,
-    token: { ...baseUser, role: 'investor', userId: '6a5c25f9b0a0ceed86a33b87', sub: '6a5c25f9b0a0ceed86a33b87' },
+    token: { name: 'B', email: 'samkiel488@gmail.com', role: 'investor', userId: '6a5c25f9b0a0ceed86a33b87', sub: '6a5c25f9b0a0ceed86a33b87' },
     maxAge: 60 * 60,
   });
 
