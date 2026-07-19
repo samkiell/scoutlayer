@@ -235,7 +235,7 @@ Being upfront about current gaps — judges respect honesty over silence:
 
 ## Credits
 
-Built by **SAMKIEL** for the **Hack-Nation 6th Global AI Hackathon** — [Maschmeyer Group "VC Brain" Challenge](https://lablab.ai), in collaboration with the **MIT Club of Northern California** and the **MIT Club of Germany**.
+Built by **SAMKIEL** for the **Hack-Nation 6th Global AI Hackathon** — [https://hack-nation.ai/](https://hack-nation.ai/) — [Maschmeyer Group "VC Brain" Challenge](https://www.mgv.vc/), in collaboration with the **MIT Club of Northern California** and the **MIT Club of Germany**.
 
 ---
 
