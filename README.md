@@ -231,7 +231,7 @@ flowchart LR
 
 ## Built By
 
-**SAMKIEL** — solo build for the [Maschmeyer Group "VC Brain" Hackathon Challenge](https://lablab.ai).
+**SAMKIEL** — solo build for the [Maschmeyer Group "VC Brain" Hackathon Challenge](https://www.mgv.vc/).
 
 ---
 
