@@ -66,7 +66,7 @@ export default function InvestorDashboard() {
       <Navbar />
 
       {/* Dense layout — Bloomberg-like per PRD */}
-      <main className="flex-1 max-w-7xl w-full mx-auto px-6 py-8 flex flex-col gap-6">
+      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 py-6 sm:py-8 flex flex-col gap-4 sm:gap-6">
         {/* Header */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 pb-4 border-b border-border">
           <div>
@@ -92,7 +92,7 @@ export default function InvestorDashboard() {
         </div>
 
         {/* Analytics row — compact */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
           <div className="bg-surface border border-border rounded-lg px-4 py-3 flex items-center gap-3">
             <Compass className="h-4 w-4 text-action" />
             <div>
@@ -126,8 +126,55 @@ export default function InvestorDashboard() {
           </div>
         </div>
 
-        {/* Data grid — dense table */}
-        <div className="bg-surface border border-border rounded-lg overflow-hidden">
+        {/* Mobile card list */}
+        <div className="md:hidden flex flex-col gap-3">
+          {applications.length > 0 ? (
+            applications.map((app) => (
+              <div key={app.id} className="bg-surface border border-border rounded-xl p-4 flex flex-col gap-3">
+                <div className="flex justify-between items-start gap-3">
+                  <div className="min-w-0">
+                    <p className="font-medium text-text truncate">{app.name}</p>
+                    <p className="text-sm text-text-muted truncate">{app.company}</p>
+                  </div>
+                  <Link
+                    href={`/investor/founder/${app.id}`}
+                    className="text-action hover:text-action/80 transition-colors shrink-0 min-h-[44px] min-w-[44px] flex items-center justify-center"
+                  >
+                    <ArrowUpRight className="h-4 w-4" />
+                  </Link>
+                </div>
+                <div className="flex flex-wrap items-center gap-2 text-xs">
+                  <span className={`text-[10px] font-data px-2 py-1 rounded border uppercase tracking-wider ${
+                    app.source === 'inbound'
+                      ? 'bg-action/10 text-action border-action/20'
+                      : 'bg-trust/10 text-trust border-trust/20'
+                  }`}>
+                    source: {app.source}
+                  </span>
+                  <span className={`text-xs font-data font-medium uppercase ${
+                    app.stage === 'decided' ? 'text-trust'
+                      : app.stage === 'sourced' ? 'text-text-muted'
+                        : 'text-action'
+                  }`}>
+                    {app.stage}
+                  </span>
+                </div>
+                <div className="flex justify-between text-xs text-text-muted font-data">
+                  <span>F. Score: {app.founderScore !== null ? app.founderScore : '—'}</span>
+                  <span>Trust: {app.trustScore !== null ? `${app.trustScore}%` : '—'}</span>
+                </div>
+              </div>
+            ))
+          ) : (
+            <div className="bg-surface border border-border rounded-xl py-10 text-center text-text-muted text-sm">
+              <p>No applications or sourced founders found in the pipeline.</p>
+              <p className="text-xs mt-1">Founders can apply directly, or you can trigger outbound scouting.</p>
+            </div>
+          )}
+        </div>
+
+        {/* Desktop data grid */}
+        <div className="hidden md:block bg-surface border border-border rounded-lg overflow-hidden">
           {applications.length > 0 ? (
             <table className="w-full text-sm">
               <thead>
@@ -148,8 +195,8 @@ export default function InvestorDashboard() {
                     <td className="px-4 py-3 text-text-muted">{app.company}</td>
                     <td className="px-4 py-3">
                       <span className={`text-[10px] font-data px-2 py-0.5 rounded border uppercase tracking-wider ${
-                        app.source === 'inbound' 
-                          ? 'bg-action/10 text-action border-action/20' 
+                        app.source === 'inbound'
+                          ? 'bg-action/10 text-action border-action/20'
                           : 'bg-trust/10 text-trust border-trust/20'
                       }`}>
                         source: {app.source}

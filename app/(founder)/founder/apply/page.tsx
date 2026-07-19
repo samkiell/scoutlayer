@@ -118,7 +118,7 @@ export default function FounderApply() {
     return (
       <div className="flex-1 flex flex-col bg-bg text-text min-h-screen">
         <Navbar />
-        <main className="flex-1 max-w-2xl w-full mx-auto px-6 py-16 flex flex-col gap-10">
+        <main className="flex-1 max-w-2xl w-full mx-auto px-4 sm:px-6 py-10 sm:py-16 flex flex-col gap-8 sm:gap-10">
           <div>
             <button
               onClick={() => router.back()}
@@ -171,7 +171,7 @@ export default function FounderApply() {
           </p>
         </div>
 
-        <form onSubmit={handleSubmit} className="bg-surface border border-border rounded-2xl p-8 flex flex-col gap-6">
+        <form onSubmit={handleSubmit} className="bg-surface border border-border rounded-2xl p-6 sm:p-8 flex flex-col gap-6">
           {/* Company Name */}
           <div className="flex flex-col gap-2">
             <label className="text-xs font-medium text-text-muted uppercase tracking-wider">Company Name *</label>
@@ -181,7 +181,7 @@ export default function FounderApply() {
               placeholder="e.g. ScoutLayer"
               value={form.companyName}
               onChange={(e) => setForm({ ...form, companyName: e.target.value })}
-              className="bg-bg border border-border rounded-xl px-4 py-3 text-sm text-text transition-colors focus:border-action"
+              className="w-full bg-bg border border-border rounded-xl px-4 py-3 text-sm text-text transition-colors focus:border-action"
             />
           </div>
 
@@ -194,7 +194,7 @@ export default function FounderApply() {
               placeholder="https://drive.google.com/file/d/... or Notion/PDF URL"
               value={form.deckUrl}
               onChange={(e) => setForm({ ...form, deckUrl: e.target.value })}
-              className="bg-bg border border-border rounded-xl px-4 py-3 text-sm text-text transition-colors focus:border-action"
+              className="w-full bg-bg border border-border rounded-xl px-4 py-3 text-sm text-text transition-colors focus:border-action"
             />
             <span className="text-[10px] text-text-muted">
               Accepts well-formed URLs (Google Slides, Notion, PDF, etc.). Direct file uploads are not supported.
@@ -211,7 +211,7 @@ export default function FounderApply() {
               placeholder="What are you building in one sentence?"
               value={form.oneLiner}
               onChange={(e) => setForm({ ...form, oneLiner: e.target.value })}
-              className="bg-bg border border-border rounded-xl px-4 py-3 text-sm text-text transition-colors resize-none focus:border-action"
+              className="w-full bg-bg border border-border rounded-xl px-4 py-3 text-sm text-text transition-colors resize-none focus:border-action"
             />
             <span className={`text-[10px] font-data text-right ${form.oneLiner.length > 150 ? 'text-flag' : 'text-text-muted'}`}>
               {form.oneLiner.length}/150
@@ -226,7 +226,7 @@ export default function FounderApply() {
               placeholder="e.g. @samkiel or https://github.com/samkiel"
               value={form.github}
               onChange={(e) => setForm({ ...form, github: e.target.value })}
-              className="bg-bg border border-border rounded-xl px-4 py-3 text-sm text-text transition-colors focus:border-action"
+              className="w-full bg-bg border border-border rounded-xl px-4 py-3 text-sm text-text transition-colors focus:border-action"
             />
             <span className="text-[10px] text-text-muted">
               If provided, we will automatically enrich your application using your GitHub profile &amp; repos.
@@ -241,7 +241,7 @@ export default function FounderApply() {
               placeholder="Traction, team size, funding stage, or any other relevant information..."
               value={form.context}
               onChange={(e) => setForm({ ...form, context: e.target.value })}
-              className="bg-bg border border-border rounded-xl px-4 py-3 text-sm text-text transition-colors resize-none focus:border-action"
+              className="w-full bg-bg border border-border rounded-xl px-4 py-3 text-sm text-text transition-colors resize-none focus:border-action"
             />
           </div>
 

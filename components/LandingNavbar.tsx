@@ -38,7 +38,7 @@ export default function LandingNavbar() {
         {/* Right: Mobile hamburger */}
         <button
           onClick={() => setMobileOpen(!mobileOpen)}
-          className="md:hidden p-2 text-text-muted hover:text-text transition-colors"
+          className="md:hidden p-2 text-text-muted hover:text-text transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center"
           aria-label="Toggle menu"
         >
           {mobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
@@ -47,25 +47,25 @@ export default function LandingNavbar() {
 
       {/* Mobile panel */}
       {mobileOpen && (
-        <div className="md:hidden bg-surface border-t border-border px-6 py-4 flex flex-col gap-3">
+        <div className="md:hidden bg-surface border-t border-border px-6 py-3 flex flex-col gap-1">
           <Link
             href="/login?intent=founder"
             onClick={() => setMobileOpen(false)}
-            className="text-sm text-text-muted hover:text-text transition-colors py-2"
+            className="min-h-[44px] flex items-center text-sm text-text-muted hover:text-text hover:bg-bg/50 rounded-lg transition-colors px-3"
           >
             For Founders
           </Link>
           <Link
             href="/login?intent=investor"
             onClick={() => setMobileOpen(false)}
-            className="text-sm text-text-muted hover:text-text transition-colors py-2"
+            className="min-h-[44px] flex items-center text-sm text-text-muted hover:text-text hover:bg-bg/50 rounded-lg transition-colors px-3"
           >
             For Investors
           </Link>
           <Link
             href="/login"
             onClick={() => setMobileOpen(false)}
-            className="w-full text-center px-4 py-2.5 bg-action hover:bg-action/90 text-white text-sm font-medium rounded-lg transition-colors mt-1"
+            className="w-full text-center px-4 py-3 bg-action hover:bg-action/90 text-white text-sm font-medium rounded-lg transition-colors mt-2 min-h-[44px] flex items-center justify-center"
           >
             Sign In
           </Link>

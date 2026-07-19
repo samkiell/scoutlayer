@@ -43,7 +43,7 @@ export default function SearchPage() {
     <div className="flex-1 flex flex-col bg-bg text-text min-h-screen">
       <Navbar />
 
-      <main className="flex-1 max-w-4xl w-full mx-auto px-6 py-12 flex flex-col gap-8">
+      <main className="flex-1 max-w-4xl w-full mx-auto px-4 sm:px-6 py-8 sm:py-12 flex flex-col gap-6 sm:gap-8">
         <div>
           <button
             onClick={() => router.back()}
@@ -60,19 +60,19 @@ export default function SearchPage() {
           </p>
         </div>
 
-        <form onSubmit={handleSearch} className="flex gap-4">
+        <form onSubmit={handleSearch} className="flex flex-col sm:flex-row gap-3 sm:gap-4">
           <input
             type="text"
             required
             placeholder="Search founders by concept, skills, location..."
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            className="flex-1 bg-surface border border-border rounded-xl px-6 py-4 text-sm text-text transition-colors"
+            className="flex-1 bg-surface border border-border rounded-xl px-4 sm:px-6 py-3 sm:py-4 text-sm text-text transition-colors"
           />
           <button
             type="submit"
             disabled={loading}
-            className="flex items-center gap-2 px-6 py-4 bg-action hover:bg-action/90 disabled:opacity-50 text-white font-semibold rounded-xl text-sm transition-all"
+            className="flex items-center justify-center gap-2 px-6 py-3 sm:py-4 bg-action hover:bg-action/90 disabled:opacity-50 text-white font-semibold rounded-xl text-sm transition-all min-h-[44px]"
           >
             <Search className="h-4 w-4" />
             {loading ? 'Searching...' : 'Search'}

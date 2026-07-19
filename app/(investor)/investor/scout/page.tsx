@@ -444,7 +444,7 @@ export default function ScoutPage() {
               {visiblePipeline.map((item) => (
                 <div
                   key={item.id}
-                  className="flex items-center justify-between bg-surface border border-border rounded-xl px-5 py-4 hover:border-action/40 transition-colors"
+                  className="flex items-center justify-between bg-surface border border-border rounded-xl px-4 py-3 sm:px-5 sm:py-4 hover:border-action/40 transition-colors"
                 >
                   <div className="flex items-center gap-3 min-w-0">
                     <Code2 className="h-4 w-4 text-text-muted shrink-0" />
@@ -472,7 +472,7 @@ export default function ScoutPage() {
                         href={`https://github.com/${item.githubUsername}`}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="text-text-muted hover:text-text transition-colors"
+                        className="text-text-muted hover:text-text transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center"
                         title="Open GitHub profile"
                       >
                         <ExternalLink className="h-4 w-4" />
@@ -481,7 +481,7 @@ export default function ScoutPage() {
                     <button
                       onClick={() => router.push(`/investor/founder/${item.id}`)}
                       title="View full profile, screening, diligence & memo"
-                      className="text-xs px-3 py-1.5 rounded-lg border border-action/30 text-action hover:bg-action/10 transition-colors cursor-pointer"
+                      className="text-xs px-3 py-2 sm:py-1.5 rounded-lg border border-action/30 text-action hover:bg-action/10 transition-colors cursor-pointer min-h-[44px]"
                     >
                       View
                     </button>
